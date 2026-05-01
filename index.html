@@ -1027,7 +1027,6 @@ grid-template-columns: 1fr;
 .kpi-val { font-size: 13px; }
 }
 </style>
-
 </head>
 <body>
 
@@ -1115,7 +1114,7 @@ grid-template-columns: 1fr;
           <div class="asset-list" id="assetList"></div>
         </div>
 
-        <!-- Horizon (non‑functional) -->
+        <!-- Horizon -->
         <div class="s-section">
           <div class="s-label">Forecast Horizon</div>
           <div class="horizon-grid">
@@ -1127,7 +1126,7 @@ grid-template-columns: 1fr;
           </div>
         </div>
 
-        <!-- Models toggles (non‑functional) -->
+        <!-- Models -->
         <div class="s-section">
           <div class="s-label">Models</div>
           <div id="modelToggles"></div>
@@ -1278,8 +1277,9 @@ grid-template-columns: 1fr;
 <script>
 /* ══════════════════════════════════════════════════
    LIVE DASHBOARD — loads forecast_data.json + Finnhub live prices
+   Uses clean display_sym for all asset labels
 ══════════════════════════════════════════════════ */
-const FINNHUB_KEY = 'd7q318hr01qosaaqf2p0d7q318hr01qosaaqf2pg';  // Your free key
+const FINNHUB_KEY = 'd7q318hr01qosaaqf2p0d7q318hr01qosaaqf2pg';
 
 const S = {
   market: 'forex',
@@ -1289,7 +1289,6 @@ const S = {
   liveInterval: null
 };
 
-// ── Utility ────────────────────────────
 function fmtP(v, sym) {
   if (v == null || isNaN(v)) return '—';
   if (v > 10000) return v.toFixed(0);
@@ -1299,40 +1298,20 @@ function fmtP(v, sym) {
   return v.toFixed(4);
 }
 
-// ── Finnhub symbol mapping (Yahoo ticker → Finnhub) ──
 function toFinnhubSymbol(yahooSymbol) {
   const map = {
-    'EURUSD=X': 'OANDA:EUR_USD',
-    'GBPUSD=X': 'OANDA:GBP_USD',
-    'JPY=X':    'OANDA:USD_JPY',
-    'AUDUSD=X': 'OANDA:AUD_USD',
-    'CAD=X':    'OANDA:USD_CAD',
-    'EURGBP=X': 'OANDA:EUR_GBP',
-    'CHF=X':    'OANDA:USD_CHF',
-    'NZDUSD=X': 'OANDA:NZD_USD',
-    'GC=F':     'OANDA:XAU_USD',
-    'SI=F':     'OANDA:XAG_USD',
-    'CL=F':     'OANDA:WTI_USD',
-    'NG=F':     'OANDA:NATGAS_USD',
-    'HG=F':     'OANDA:XCU_USD',
-    'ZW=F':     'OANDA:WHEAT_USD',
-    'ZC=F':     'OANDA:CORN_USD',
-    'PL=F':     'OANDA:XPT_USD',
-    '^GSPC':    'SPY',        // S&P 500 ETF as proxy
-    '^IXIC':    'QQQ',        // NASDAQ proxy
-    '^DJI':     'DIA',        // Dow proxy
-    '^FTSE':    'EWU',        // FTSE proxy
-    '^N225':    'EWJ',        // Nikkei proxy
-    '^GDAXI':   'EWG',        // DAX proxy
-    '^FCHI':    'EWQ',        // CAC proxy
-    '^AXJO':    'EWA',        // ASX proxy
+    'EURUSD=X': 'OANDA:EUR_USD', 'GBPUSD=X': 'OANDA:GBP_USD', 'JPY=X': 'OANDA:USD_JPY',
+    'AUDUSD=X': 'OANDA:AUD_USD', 'CAD=X': 'OANDA:USD_CAD', 'EURGBP=X': 'OANDA:EUR_GBP',
+    'CHF=X': 'OANDA:USD_CHF', 'NZDUSD=X': 'OANDA:NZD_USD',
+    'GC=F': 'OANDA:XAU_USD', 'SI=F': 'OANDA:XAG_USD', 'CL=F': 'OANDA:WTI_USD',
+    'NG=F': 'OANDA:NATGAS_USD', 'HG=F': 'OANDA:XCU_USD', 'ZW=F': 'OANDA:WHEAT_USD',
+    'ZC=F': 'OANDA:CORN_USD', 'PL=F': 'OANDA:XPT_USD',
+    '^GSPC': 'SPY', '^IXIC': 'QQQ', '^DJI': 'DIA', '^FTSE': 'EWU',
+    '^N225': 'EWJ', '^GDAXI': 'EWG', '^FCHI': 'EWQ', '^AXJO': 'EWA'
   };
-  // Stocks usually just upper case, pass through
-  if (map[yahooSymbol]) return map[yahooSymbol];
-  return yahooSymbol.replace(/[=^]/g, '').toUpperCase();
+  return map[yahooSymbol] || yahooSymbol.replace(/[=^]/g, '').toUpperCase();
 }
 
-// ── Fetch live price from Finnhub ─────
 async function fetchLivePrice() {
   if (!S.currentAsset) return;
   const sym = toFinnhubSymbol(S.currentAsset.sym);
@@ -1340,25 +1319,21 @@ async function fetchLivePrice() {
   try {
     const resp = await fetch(url);
     const data = await resp.json();
-    if (data.c && data.c > 0) {  // c = current price, pc = previous close
+    if (data.c && data.c > 0) {
       const price = data.c;
-      const prevClose = data.pc || S.currentAsset.ohlc.open; // fallback
+      const prevClose = data.pc || S.currentAsset.ohlc.open;
       const change = ((price - prevClose) / prevClose * 100).toFixed(2);
-      document.getElementById('hPrice').textContent = fmtP(price, S.currentAsset.sym);
+      document.getElementById('hPrice').textContent = fmtP(price, S.currentAsset.display_sym);
       document.getElementById('hPrice').style.color = change >= 0 ? 'var(--green)' : 'var(--red)';
       const badge = document.getElementById('hBadge');
       badge.textContent = `${change >= 0 ? '▲' : '▼'} ${Math.abs(change)}%`;
       badge.className = 'h-badge ' + (change >= 0 ? 'up' : 'down');
-      // Also update KPI price card
-      document.getElementById('kPrice').textContent = fmtP(price, S.currentAsset.sym);
+      document.getElementById('kPrice').textContent = fmtP(price, S.currentAsset.display_sym);
       document.getElementById('kPrice').style.color = change >= 0 ? 'var(--green)' : 'var(--red)';
     }
-  } catch (e) {
-    console.warn('Live price fetch failed', e);
-  }
+  } catch (e) { console.warn('Live price fetch failed', e); }
 }
 
-// ── Fetch JSON ─────────────────────────
 async function loadData() {
   try {
     const resp = await fetch('./forecast_data.json');
@@ -1371,24 +1346,16 @@ async function loadData() {
   }
 }
 
-// ── Initialize ────────────────────────
 function initUI() {
   document.getElementById('runLabel').textContent = `📡 Updated: ${new Date(S.allData.generated_at).toLocaleString()}`;
-  // Bind market tabs
   document.querySelectorAll('.mktab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      const mkt = tab.dataset.mkt;
-      selectMarket(mkt);
-    });
+    tab.addEventListener('click', () => selectMarket(tab.dataset.mkt));
   });
-  // Default market
   selectMarket('forex');
-  // Start live clock
   startLiveClock();
   setInterval(startLiveClock, 30000);
-  // Start live price polling
   if (S.liveInterval) clearInterval(S.liveInterval);
-  S.liveInterval = setInterval(fetchLivePrice, 60000); // every 60 sec
+  S.liveInterval = setInterval(fetchLivePrice, 60000);
 }
 
 function startLiveClock() {
@@ -1396,7 +1363,6 @@ function startLiveClock() {
   document.querySelectorAll('.live-txt').forEach(e => e.textContent = now.toLocaleTimeString());
 }
 
-// ── Market switching ──────────────────
 function selectMarket(market) {
   S.market = market;
   document.querySelectorAll('.mktab').forEach(t => t.classList.remove('active'));
@@ -1404,39 +1370,34 @@ function selectMarket(market) {
   if (!S.allData || !S.allData.markets[market]) return;
   const assets = S.allData.markets[market];
   renderAssets(assets);
-  if (assets.length > 0) {
-    selectAssetByIndex(0, assets);
-  }
+  if (assets.length) selectAssetByIndex(0, assets);
 }
 
-// ── Asset list ───────────────────────
 let currentAssets = [];
 
 function renderAssets(assets) {
   currentAssets = assets;
   const filter = document.getElementById('assetSearch').value.toLowerCase();
-  const filtered = assets.filter(a => a.sym.toLowerCase().includes(filter) || a.name.toLowerCase().includes(filter));
+  const filtered = assets.filter(a => a.display_sym.toLowerCase().includes(filter) || a.name.toLowerCase().includes(filter));
   const list = document.getElementById('assetList');
   list.innerHTML = filtered.map((a, i) => {
     const price = a.ohlc.close;
     const change = ((price - a.ohlc.open) / a.ohlc.open * 100).toFixed(2);
-    const dirClass = parseFloat(change) >= 0 ? 'up' : 'down';
+    const dir = parseFloat(change) >= 0 ? 'up' : 'down';
     return `<div class="arow" data-sym="${a.sym}" onclick="selectAssetBySym('${a.sym}')">
       <div class="arow-left">
-        <span class="arow-sym">${a.sym}</span>
+        <span class="arow-sym">${a.display_sym}</span>
         <span class="arow-name">${a.name}</span>
       </div>
       <div class="arow-right">
-        <div class="arow-px">${fmtP(price, a.sym)}</div>
-        <div class="arow-chg ${dirClass}">${parseFloat(change) >= 0 ? '▲' : '▼'} ${Math.abs(change)}%</div>
+        <div class="arow-px">${fmtP(price, a.display_sym)}</div>
+        <div class="arow-chg ${dir}">${parseFloat(change) >= 0 ? '▲' : '▼'} ${Math.abs(change)}%</div>
       </div>
     </div>`;
   }).join('');
 }
 
-function filterAssets(value) {
-  renderAssets(currentAssets);
-}
+function filterAssets() { renderAssets(currentAssets); }
 
 function selectAssetBySym(sym) {
   const asset = currentAssets.find(a => a.sym === sym);
@@ -1457,25 +1418,22 @@ function selectAssetByIndex(idx, assets) {
   }
 }
 
-// ── Main dashboard update ────────────
 function updateDashboard(asset) {
   S.currentAsset = asset;
-  // Header
-  document.getElementById('hSym').textContent = asset.sym;
+  document.getElementById('hSym').textContent = asset.display_sym;
   const price = asset.ohlc.close;
-  document.getElementById('hPrice').textContent = fmtP(price, asset.sym);
+  document.getElementById('hPrice').textContent = fmtP(price, asset.display_sym);
   const change = (price - asset.ohlc.open) / asset.ohlc.open * 100;
   const badge = document.getElementById('hBadge');
   badge.textContent = `${change >= 0 ? '▲' : '▼'} ${Math.abs(change).toFixed(2)}%`;
   badge.className = 'h-badge ' + (change >= 0 ? 'up' : 'down');
-  document.getElementById('hOpen').textContent = fmtP(asset.ohlc.open, asset.sym);
-  document.getElementById('hHigh').textContent = fmtP(asset.ohlc.high, asset.sym);
-  document.getElementById('hLow').textContent = fmtP(asset.ohlc.low, asset.sym);
-  document.getElementById('hVol').textContent = '—'; // volume not provided
+  document.getElementById('hOpen').textContent = fmtP(asset.ohlc.open, asset.display_sym);
+  document.getElementById('hHigh').textContent = fmtP(asset.ohlc.high, asset.display_sym);
+  document.getElementById('hLow').textContent = fmtP(asset.ohlc.low, asset.display_sym);
+  document.getElementById('hVol').textContent = '—';
 
-  // KPIs
   const tech = asset.technicals;
-  document.getElementById('kPrice').textContent = fmtP(price, asset.sym);
+  document.getElementById('kPrice').textContent = fmtP(price, asset.display_sym);
   document.getElementById('kPrice').style.color = change >= 0 ? 'var(--green)' : 'var(--red)';
   document.getElementById('kPriceSub').textContent = `${change >= 0 ? '▲' : '▼'} ${Math.abs(change).toFixed(2)}% today`;
   document.getElementById('kVol').textContent = tech.volatility_30d.toFixed(1) + '%';
@@ -1495,38 +1453,27 @@ function updateDashboard(asset) {
     document.getElementById('kR2Sub').textContent = bestModel?.name || '—';
   }
 
-  // Chart
   drawPriceChart(asset);
-  // Donut
   drawDonut(asset);
-  // Signal panel
   renderSignalPanel(asset);
-  // Model cards
   renderModelCards(asset);
-  // Badge
-  document.getElementById('modelsBadge').textContent = `${asset.models.length} models · ${asset.sym}`;
-
-  // Bottom panels (placeholder)
+  document.getElementById('modelsBadge').textContent = `${asset.models.length} models · ${asset.display_sym}`;
   document.getElementById('statTestsBody').innerHTML = '<div class="stest-row"><span class="stest-name">Statistical tests not included – extend Python script</span></div>';
   document.getElementById('featBody').innerHTML = '<div class="feat-row"><span class="feat-labels">Feature importance not computed</span></div>';
-
-  // Fetch live price immediately after switching
   fetchLivePrice();
 }
 
-// ── Charts ─────────────────────────────
+/* ══════ Charts ══════ */
 function makeLabels(nHist, nForecast) {
   const arr = [];
   const now = new Date();
-  for (let i = nHist - 1; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    arr.push(d.toLocaleDateString('en', { month: 'short', day: 'numeric' }));
+  for (let i = nHist-1; i >= 0; i--) {
+    const d = new Date(now); d.setDate(d.getDate() - i);
+    arr.push(d.toLocaleDateString('en', { month:'short', day:'numeric' }));
   }
-  for (let i = 1; i <= nForecast; i++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() + i);
-    arr.push(d.toLocaleDateString('en', { month: 'short', day: 'numeric' }));
+  for (let i=1; i<=nForecast; i++) {
+    const d = new Date(now); d.setDate(d.getDate() + i);
+    arr.push(d.toLocaleDateString('en', { month:'short', day:'numeric' }));
   }
   return arr;
 }
@@ -1539,7 +1486,6 @@ function drawPriceChart(asset) {
   const steps = asset.models[0]?.forecast.length || 30;
   const labs = makeLabels(dLen, steps);
   const histData = [...hist, ...Array(steps).fill(null)];
-
   const datasets = [{
     label: 'Actual',
     data: histData,
@@ -1551,60 +1497,42 @@ function drawPriceChart(asset) {
     spanGaps: false,
     order: 10
   }];
-
   asset.models.forEach(m => {
     const fc = m.forecast;
-    const fd = [...Array(dLen - 1).fill(null), hist[dLen - 1], ...fc];
+    const fd = [...Array(dLen-1).fill(null), hist[dLen-1], ...fc];
     datasets.push({
       label: m.name,
       data: fd,
       borderColor: m.color,
-      borderWidth: m.type === 'hybrid' ? 2 : 1.5,
-      borderDash: m.type === 'stat' ? [5, 3] : m.type === 'ml' ? [3, 2] : [],
+      borderWidth: m.type==='hybrid'?2:1.5,
+      borderDash: m.type==='stat'?[5,3]:m.type==='ml'?[3,2]:[],
       pointRadius: 0,
       tension: 0.3,
       fill: false,
       spanGaps: false
     });
   });
-
   S.charts.price = new Chart(ctx, {
     type: 'line',
     data: { labels: labs, datasets },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: { duration: 500 },
+      responsive: true, maintainAspectRatio: false, animation: { duration: 500 },
       plugins: {
         legend: { display: false },
         tooltip: {
-          mode: 'index',
-          intersect: false,
-          backgroundColor: '#0f1422',
-          borderColor: 'rgba(255,255,255,.08)',
-          borderWidth: 1,
-          titleColor: '#94a3b8',
-          bodyColor: '#f1f5f9',
-          callbacks: {
-            label: (c) => c.parsed.y === null ? null : ` ${c.dataset.label}: ${fmtP(c.parsed.y, asset.sym)}`
-          }
+          mode: 'index', intersect: false,
+          backgroundColor: '#0f1422', borderColor: 'rgba(255,255,255,.08)', borderWidth: 1,
+          titleColor: '#94a3b8', bodyColor: '#f1f5f9',
+          callbacks: { label: (c) => c.parsed.y===null ? null : ` ${c.dataset.label}: ${fmtP(c.parsed.y, asset.display_sym)}` }
         }
       },
       scales: {
-        x: {
-          grid: { color: 'rgba(255,255,255,.04)' },
-          ticks: { color: '#475569', font: { family: 'DM Mono', size: 9 }, maxTicksLimit: 8 }
-        },
-        y: {
-          position: 'right',
-          grid: { color: 'rgba(255,255,255,.04)' },
-          ticks: { color: '#475569', callback: v => fmtP(v, asset.sym) }
-        }
+        x: { grid: { color:'rgba(255,255,255,.04)' }, ticks: { color:'#475569', font:{ family:'DM Mono', size:9 }, maxTicksLimit:8 } },
+        y: { position:'right', grid: { color:'rgba(255,255,255,.04)' }, ticks: { color:'#475569', callback: v => fmtP(v, asset.display_sym) } }
       }
     }
   });
-
-  document.getElementById('cpTitle').textContent = `${asset.sym} — Price & Forecast`;
+  document.getElementById('cpTitle').textContent = `${asset.display_sym} — Price & Forecast`;
   document.getElementById('cpSub').textContent = `${asset.models.length} models · Generated ${new Date(S.allData.generated_at).toLocaleString()}`;
 }
 
@@ -1621,22 +1549,10 @@ function drawDonut(asset) {
   document.getElementById('ringDir').textContent = asset.consensus.direction;
   document.getElementById('ringDir').style.color = col;
   document.getElementById('ringTime').textContent = `${total} models · ${new Date(S.allData.generated_at).toLocaleTimeString()}`;
-
   S.charts.donut = new Chart(ctx, {
     type: 'doughnut',
-    data: {
-      datasets: [{
-        data: [bullish, total - bullish],
-        backgroundColor: ['rgba(16,185,129,.8)', 'rgba(239,68,68,.55)'],
-        borderWidth: 0,
-        cutout: '74%'
-      }]
-    },
-    options: {
-      responsive: false,
-      plugins: { legend: { display: false }, tooltip: { enabled: false } },
-      animation: { duration: 600 }
-    }
+    data: { datasets: [{ data: [bullish, total - bullish], backgroundColor: ['rgba(16,185,129,.8)', 'rgba(239,68,68,.55)'], borderWidth: 0, cutout: '74%' }] },
+    options: { responsive: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 600 } }
   });
 }
 
@@ -1656,7 +1572,7 @@ function renderSignalPanel(asset) {
   ['pt1d', 'pt7d', 'pt30d'].forEach(id => {
     const val = targets[id];
     const el = document.getElementById(id);
-    el.textContent = fmtP(val, asset.sym);
+    el.textContent = fmtP(val, asset.display_sym);
     el.style.color = val > last ? 'var(--green)' : 'var(--red)';
   });
 }
@@ -1664,7 +1580,7 @@ function renderSignalPanel(asset) {
 function renderModelCards(asset) {
   const sorted = [...asset.models].sort((a, b) => b.metrics.r2 - a.metrics.r2);
   const last = asset.ohlc.close;
-  const sym = asset.sym;
+  const sym = asset.display_sym;
   const grid = document.getElementById('modelGrid');
   grid.innerHTML = sorted.map((m, i) => {
     const met = m.metrics;
@@ -1697,19 +1613,15 @@ function renderModelCards(asset) {
   }).join('');
 }
 
-// ── Mobile sidebar toggle ────────────
+/* ══════ Mobile sidebar toggle ══════ */
 function toggleSidebar() {
   const sb = document.getElementById('sidebar');
   const ov = document.getElementById('sidebar-overlay');
   const hb = document.getElementById('hamburger');
   const open = sb.classList.toggle('open');
   hb.classList.toggle('open', open);
-  if (open) {
-    ov.classList.add('visible');
-    document.body.style.overflow = 'hidden';
-  } else {
-    closeSidebar();
-  }
+  if (open) { ov.classList.add('visible'); document.body.style.overflow = 'hidden'; }
+  else { closeSidebar(); }
 }
 
 function closeSidebar() {
@@ -1722,7 +1634,7 @@ function closeSidebar() {
   document.body.style.overflow = '';
 }
 
-// ── Start ─────────────────────────────
+/* ══════ Init ══════ */
 window.addEventListener('DOMContentLoaded', () => {
   loadData();
   document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
@@ -1732,6 +1644,5 @@ window.addEventListener('resize', () => {
   if (window.innerWidth > 768) closeSidebar();
 });
 </script>
-
 </body>
 </html>
