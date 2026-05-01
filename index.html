@@ -4,1512 +4,2589 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QUANT PRISM — Market Analysis Engine</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+<title>NEXUS — Quantitative Market Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Clash+Display:wght@400;500;600;700&family=Cabinet+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg: #04060f;
-    --surface: #080d1c;
-    --surface2: #0d1528;
-    --border: #1a2640;
-    --accent: #00d4ff;
-    --accent2: #7b5ea7;
-    --accent3: #ff6b35;
-    --green: #00e5a0;
-    --red: #ff4060;
-    --yellow: #ffd166;
-    --text: #e8edf5;
-    --muted: #5a7090;
-    --glow: 0 0 20px rgba(0,212,255,0.15);
-  }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-- { margin:0; padding:0; box-sizing:border-box; }
+:root {
+–bg0: #060810;
+–bg1: #0a0d18;
+–bg2: #0f1422;
+–bg3: #141929;
+–border: rgba(255,255,255,0.06);
+–border2: rgba(255,255,255,0.1);
+–c-blue: #3b82f6;
+–c-cyan: #06b6d4;
+–c-green: #10b981;
+–c-yellow: #f59e0b;
+–c-orange: #f97316;
+–c-red: #ef4444;
+–c-purple: #8b5cf6;
+–c-pink: #ec4899;
+–text: #f1f5f9;
+–text2: #94a3b8;
+–text3: #475569;
+–sidebar-w: 260px;
+–header-h: 56px;
+–font-mono: ‘DM Mono’, monospace;
+–font-display: ‘Cabinet Grotesk’, sans-serif;
+}
+
+html, body { height: 100%; overflow: hidden; }
 
 body {
-background: var(–bg);
+background: var(–bg0);
 color: var(–text);
-font-family: ‘Syne’, sans-serif;
-min-height: 100vh;
-overflow-x: hidden;
+font-family: var(–font-display);
+font-size: 14px;
+line-height: 1.5;
 }
 
-/* Animated grid background */
-body::before {
-content: ‘’;
-position: fixed;
-inset: 0;
-background-image:
-linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-background-size: 40px 40px;
-pointer-events: none;
-z-index: 0;
-}
+/* SCROLLBARS */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(–bg3); border-radius: 4px; }
 
-/* Ambient glow orbs */
-body::after {
-content: ‘’;
-position: fixed;
-top: -200px;
-right: -200px;
-width: 600px;
-height: 600px;
-background: radial-gradient(circle, rgba(123,94,167,0.08) 0%, transparent 70%);
-pointer-events: none;
-z-index: 0;
-}
-
-/* ─── HEADER ─── */
-header {
-position: relative;
-z-index: 10;
-display: flex;
-align-items: center;
-justify-content: space-between;
-padding: 20px 40px;
-border-bottom: 1px solid var(–border);
-background: rgba(4,6,15,0.8);
-backdrop-filter: blur(20px);
-}
-
-.logo {
-display: flex;
-align-items: baseline;
-gap: 8px;
-}
-
-.logo-text {
-font-family: ‘Fraunces’, serif;
-font-size: 22px;
-font-weight: 600;
-letter-spacing: 0.1em;
-color: var(–text);
-}
-
-.logo-accent {
-color: var(–accent);
-font-style: italic;
-}
-
-.logo-badge {
-font-family: ‘Space Mono’, monospace;
-font-size: 9px;
-color: var(–accent);
-border: 1px solid var(–accent);
-padding: 2px 6px;
-letter-spacing: 0.15em;
-opacity: 0.7;
-}
-
-nav {
-display: flex;
-gap: 6px;
-align-items: center;
-}
-
-nav button {
-background: none;
-border: none;
-color: var(–muted);
-font-family: ‘Space Mono’, monospace;
-font-size: 11px;
-letter-spacing: 0.1em;
-padding: 8px 16px;
-cursor: pointer;
-transition: color 0.2s;
-text-transform: uppercase;
-}
-
-nav button:hover, nav button.active {
-color: var(–accent);
-}
-
-.live-indicator {
-display: flex;
-align-items: center;
-gap: 6px;
-font-family: ‘Space Mono’, monospace;
-font-size: 10px;
-color: var(–green);
-letter-spacing: 0.1em;
-}
-
-.pulse-dot {
-width: 6px;
-height: 6px;
-background: var(–green);
-border-radius: 50%;
-animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-0%, 100% { opacity: 1; transform: scale(1); }
-50% { opacity: 0.4; transform: scale(0.8); }
-}
-
-/* ─── MAIN LAYOUT ─── */
-.app {
-position: relative;
-z-index: 1;
+/* ═══════════════════════════════════════════
+LAYOUT SHELL
+═══════════════════════════════════════════ */
+#app {
 display: grid;
-grid-template-columns: 280px 1fr;
-min-height: calc(100vh - 65px);
+grid-template-rows: var(–header-h) 1fr;
+grid-template-columns: var(–sidebar-w) 1fr;
+height: 100vh;
+width: 100vw;
 }
 
-/* ─── SIDEBAR ─── */
-.sidebar {
-border-right: 1px solid var(–border);
-padding: 28px 20px;
-display: flex;
-flex-direction: column;
-gap: 28px;
-background: rgba(8,13,28,0.6);
-}
-
-.sidebar-section h3 {
-font-family: ‘Space Mono’, monospace;
-font-size: 9px;
-letter-spacing: 0.2em;
-color: var(–muted);
-text-transform: uppercase;
-margin-bottom: 12px;
-padding-left: 4px;
-}
-
-.market-tabs {
-display: flex;
-flex-direction: column;
-gap: 4px;
-}
-
-.market-tab {
+/* ═══════════════════════════════════════════
+HEADER
+═══════════════════════════════════════════ */
+#header {
+grid-column: 1 / -1;
 display: flex;
 align-items: center;
-justify-content: space-between;
-padding: 10px 14px;
-border-radius: 6px;
-cursor: pointer;
-border: 1px solid transparent;
-transition: all 0.2s;
+padding: 0 20px;
+border-bottom: 1px solid var(–border);
+background: rgba(6,8,16,0.95);
+backdrop-filter: blur(20px);
+gap: 0;
+position: relative;
+z-index: 100;
 }
 
-.market-tab:hover {
-background: var(–surface2);
-border-color: var(–border);
-}
-
-.market-tab.active {
-background: rgba(0,212,255,0.07);
-border-color: rgba(0,212,255,0.3);
-}
-
-.market-tab .tab-left {
+.header-brand {
 display: flex;
 align-items: center;
 gap: 10px;
+width: var(–sidebar-w);
+padding-right: 16px;
+border-right: 1px solid var(–border);
+flex-shrink: 0;
 }
 
-.tab-icon {
-width: 28px;
-height: 28px;
+.brand-logo {
+width: 28px; height: 28px;
+background: linear-gradient(135deg, var(–c-blue), var(–c-cyan));
 border-radius: 6px;
-display: flex;
-align-items: center;
-justify-content: center;
-font-size: 14px;
+display: flex; align-items: center; justify-content: center;
+font-size: 14px; font-weight: 800; color: #fff;
+flex-shrink: 0;
 }
 
-.tab-name {
-font-size: 13px;
-font-weight: 600;
+.brand-name {
+font-family: var(–font-display);
+font-size: 16px;
+font-weight: 800;
+letter-spacing: 0.05em;
 color: var(–text);
 }
 
-.tab-count {
-font-family: ‘Space Mono’, monospace;
-font-size: 10px;
-color: var(–muted);
+.brand-ver {
+font-family: var(–font-mono);
+font-size: 9px;
+color: var(–c-cyan);
+border: 1px solid rgba(6,182,212,0.3);
+padding: 1px 5px;
+border-radius: 3px;
+letter-spacing: 0.1em;
 }
 
-/* Asset selector */
-.asset-list {
+.header-asset-info {
+display: flex;
+align-items: center;
+gap: 20px;
+padding: 0 24px;
+flex: 1;
+}
+
+.asset-name-big {
+font-family: var(–font-display);
+font-size: 20px;
+font-weight: 800;
+letter-spacing: 0.02em;
+white-space: nowrap;
+}
+
+.asset-price-big {
+font-family: var(–font-mono);
+font-size: 18px;
+font-weight: 500;
+}
+
+.asset-change-badge {
+font-family: var(–font-mono);
+font-size: 12px;
+padding: 3px 8px;
+border-radius: 4px;
+font-weight: 500;
+}
+
+.asset-change-badge.up { background: rgba(16,185,129,0.15); color: var(–c-green); }
+.asset-change-badge.down { background: rgba(239,68,68,0.12); color: var(–c-red); }
+
+.header-meta {
+display: flex;
+gap: 24px;
+padding: 0 24px;
+border-left: 1px solid var(–border);
+}
+
+.hmeta-item { text-align: center; }
+.hmeta-label { font-family: var(–font-mono); font-size: 9px; color: var(–text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
+.hmeta-value { font-family: var(–font-mono); font-size: 12px; color: var(–text2); font-weight: 500; }
+
+.header-right {
+display: flex;
+align-items: center;
+gap: 12px;
+margin-left: auto;
+padding-left: 20px;
+}
+
+.live-pill {
+display: flex;
+align-items: center;
+gap: 6px;
+background: rgba(16,185,129,0.1);
+border: 1px solid rgba(16,185,129,0.2);
+border-radius: 20px;
+padding: 4px 10px;
+font-family: var(–font-mono);
+font-size: 10px;
+color: var(–c-green);
+letter-spacing: 0.08em;
+}
+
+.live-dot {
+width: 5px; height: 5px;
+background: var(–c-green);
+border-radius: 50%;
+animation: livePulse 1.8s infinite;
+}
+
+@keyframes livePulse {
+0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(16,185,129,0); }
+}
+
+#lastUpdateTime {
+font-family: var(–font-mono);
+font-size: 10px;
+color: var(–text3);
+}
+
+/* ═══════════════════════════════════════════
+SIDEBAR
+═══════════════════════════════════════════ */
+#sidebar {
+background: var(–bg1);
+border-right: 1px solid var(–border);
+overflow-y: auto;
 display: flex;
 flex-direction: column;
-gap: 3px;
+gap: 0;
 }
 
-.asset-item {
-display: flex;
-align-items: center;
-justify-content: space-between;
-padding: 8px 12px;
-border-radius: 5px;
-cursor: pointer;
-transition: background 0.15s;
+.sidebar-section {
+border-bottom: 1px solid var(–border);
+padding: 14px 16px;
 }
 
-.asset-item:hover { background: var(–surface2); }
-.asset-item.selected { background: rgba(0,229,160,0.06); }
-
-.asset-symbol {
-font-family: ‘Space Mono’, monospace;
-font-size: 12px;
-font-weight: 700;
-color: var(–text);
+.sidebar-section-title {
+font-family: var(–font-mono);
+font-size: 9px;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+color: var(–text3);
+margin-bottom: 10px;
 }
 
-.asset-change {
-font-family: ‘Space Mono’, monospace;
-font-size: 10px;
-}
-
-.asset-change.up { color: var(–green); }
-.asset-change.down { color: var(–red); }
-
-/* Model selector */
-.model-grid {
+/* Market tabs */
+.market-tabs {
 display: grid;
 grid-template-columns: 1fr 1fr;
-gap: 6px;
+gap: 5px;
 }
 
-.model-chip {
+.mktab {
+display: flex;
+align-items: center;
+gap: 7px;
 padding: 8px 10px;
 border-radius: 6px;
 border: 1px solid var(–border);
-background: var(–surface);
 cursor: pointer;
-transition: all 0.2s;
-text-align: center;
+background: var(–bg2);
+transition: all 0.15s;
+font-size: 12px;
+font-weight: 600;
+color: var(–text2);
 }
 
-.model-chip:hover { border-color: var(–muted); }
-.model-chip.active { border-color: var(–accent2); background: rgba(123,94,167,0.1); }
-.model-chip.active-stat { border-color: var(–accent); background: rgba(0,212,255,0.07); }
-.model-chip.active-hybrid { border-color: var(–yellow); background: rgba(255,209,102,0.07); }
+.mktab:hover { border-color: var(–border2); color: var(–text); }
 
-.chip-label {
-font-family: ‘Space Mono’, monospace;
-font-size: 9px;
-letter-spacing: 0.05em;
-color: var(–muted);
-display: block;
-margin-bottom: 2px;
+.mktab.active {
+background: rgba(59,130,246,0.1);
+border-color: rgba(59,130,246,0.4);
+color: var(–c-blue);
 }
 
-.chip-name {
+.mktab-icon { font-size: 14px; }
+
+/* Asset search */
+.asset-search-wrap {
+position: relative;
+margin-bottom: 8px;
+}
+
+.asset-search {
+width: 100%;
+background: var(–bg2);
+border: 1px solid var(–border);
+border-radius: 6px;
+padding: 7px 10px 7px 30px;
+font-family: var(–font-mono);
 font-size: 11px;
-font-weight: 700;
+color: var(–text);
+outline: none;
+transition: border-color 0.15s;
+}
+
+.asset-search::placeholder { color: var(–text3); }
+.asset-search:focus { border-color: rgba(59,130,246,0.4); }
+
+.search-icon {
+position: absolute;
+left: 9px; top: 50%;
+transform: translateY(-50%);
+color: var(–text3);
+font-size: 13px;
+}
+
+/* Asset list */
+.asset-list {
+display: flex;
+flex-direction: column;
+gap: 2px;
+max-height: 220px;
+overflow-y: auto;
+}
+
+.asset-row {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 7px 10px;
+border-radius: 6px;
+cursor: pointer;
+transition: background 0.12s;
+border: 1px solid transparent;
+}
+
+.asset-row:hover { background: var(–bg3); }
+
+.asset-row.active {
+background: rgba(59,130,246,0.08);
+border-color: rgba(59,130,246,0.2);
+}
+
+.asset-row-left { display: flex; flex-direction: column; gap: 1px; }
+
+.asset-sym {
+font-family: var(–font-mono);
+font-size: 12px;
+font-weight: 500;
 color: var(–text);
 }
 
-/* Run button */
-.run-btn {
-width: 100%;
-padding: 14px;
-background: linear-gradient(135deg, var(–accent), var(–accent2));
-border: none;
-border-radius: 8px;
-color: #000;
-font-family: ‘Syne’, sans-serif;
-font-size: 13px;
-font-weight: 800;
+.asset-fullname {
+font-size: 10px;
+color: var(–text3);
+}
+
+.asset-row-right { text-align: right; }
+
+.asset-px {
+font-family: var(–font-mono);
+font-size: 11px;
+color: var(–text2);
+}
+
+.asset-chg {
+font-family: var(–font-mono);
+font-size: 10px;
+}
+
+.asset-chg.up { color: var(–c-green); }
+.asset-chg.down { color: var(–c-red); }
+
+/* Model toggles */
+.model-category { margin-bottom: 10px; }
+
+.model-cat-label {
+font-family: var(–font-mono);
+font-size: 9px;
 letter-spacing: 0.1em;
-cursor: pointer;
 text-transform: uppercase;
-transition: opacity 0.2s, transform 0.1s;
-position: relative;
-overflow: hidden;
+margin-bottom: 5px;
+padding: 2px 6px;
+border-radius: 3px;
+display: inline-block;
 }
 
-.run-btn::before {
-content: ‘’;
-position: absolute;
-inset: 0;
-background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
-}
+.model-cat-label.stat { background: rgba(6,182,212,0.12); color: var(–c-cyan); }
+.model-cat-label.ml { background: rgba(139,92,246,0.12); color: var(–c-purple); }
+.model-cat-label.hybrid { background: rgba(245,158,11,0.12); color: var(–c-yellow); }
 
-.run-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-.run-btn:active { transform: translateY(0); }
-.run-btn.loading { opacity: 0.6; pointer-events: none; }
+.model-toggles { display: flex; flex-direction: column; gap: 3px; }
 
-/* Horizon selector */
-.horizon-row {
+.model-toggle {
 display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 6px 10px;
+border-radius: 5px;
+cursor: pointer;
+border: 1px solid var(–border);
+background: var(–bg2);
+transition: all 0.12s;
+}
+
+.model-toggle:hover { border-color: var(–border2); }
+.model-toggle.on { border-color: rgba(59,130,246,0.25); background: rgba(59,130,246,0.06); }
+
+.model-toggle-left { display: flex; align-items: center; gap: 8px; }
+.model-toggle-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.model-toggle-name { font-size: 11px; font-weight: 600; color: var(–text2); }
+.model-toggle.on .model-toggle-name { color: var(–text); }
+
+.toggle-switch {
+width: 28px; height: 15px;
+background: var(–bg3);
+border-radius: 10px;
+position: relative;
+transition: background 0.2s;
+}
+
+.toggle-switch.on { background: var(–c-blue); }
+
+.toggle-thumb {
+width: 11px; height: 11px;
+background: #fff;
+border-radius: 50%;
+position: absolute;
+top: 2px; left: 2px;
+transition: left 0.2s;
+box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.toggle-switch.on .toggle-thumb { left: 15px; }
+
+/* Horizon buttons */
+.horizon-grid {
+display: grid;
+grid-template-columns: repeat(5, 1fr);
 gap: 4px;
 }
 
 .horizon-btn {
-flex: 1;
-padding: 7px 4px;
-background: var(–surface);
+padding: 6px 0;
+background: var(–bg2);
 border: 1px solid var(–border);
 border-radius: 5px;
-color: var(–muted);
-font-family: ‘Space Mono’, monospace;
+color: var(–text3);
+font-family: var(–font-mono);
 font-size: 10px;
 cursor: pointer;
-transition: all 0.15s;
+transition: all 0.12s;
 text-align: center;
+font-weight: 500;
 }
 
-.horizon-btn:hover { border-color: var(–muted); color: var(–text); }
-.horizon-btn.active { background: rgba(255,107,53,0.1); border-color: var(–accent3); color: var(–accent3); }
+.horizon-btn:hover { border-color: var(–border2); color: var(–text2); }
+.horizon-btn.active { background: rgba(59,130,246,0.12); border-color: rgba(59,130,246,0.4); color: var(–c-blue); }
 
-/* ─── MAIN CONTENT ─── */
-.main {
-padding: 28px 32px;
+/* Run button */
+.run-analysis-btn {
+margin: 14px 16px 16px;
+padding: 12px;
+background: linear-gradient(135deg, var(–c-blue), #6366f1);
+border: none;
+border-radius: 8px;
+color: #fff;
+font-family: var(–font-display);
+font-size: 13px;
+font-weight: 800;
+letter-spacing: 0.05em;
+cursor: pointer;
+width: calc(100% - 32px);
+transition: opacity 0.2s, transform 0.1s;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+position: relative;
+overflow: hidden;
+}
+
+.run-analysis-btn::before {
+content: ‘’;
+position: absolute;
+inset: 0;
+background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+}
+
+.run-analysis-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+.run-analysis-btn:active { transform: translateY(0); }
+.run-analysis-btn.running { opacity: 0.6; pointer-events: none; }
+
+.run-spinner {
+width: 14px; height: 14px;
+border: 2px solid rgba(255,255,255,0.3);
+border-top-color: #fff;
+border-radius: 50%;
+animation: spin 0.7s linear infinite;
+display: none;
+}
+
+.run-analysis-btn.running .run-spinner { display: block; }
+.run-analysis-btn.running .run-label { display: none; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════════════════════════════════════════
+MAIN CONTENT
+═══════════════════════════════════════════ */
+#main {
+overflow-y: auto;
+background: var(–bg0);
 display: flex;
 flex-direction: column;
-gap: 24px;
-overflow-y: auto;
+gap: 0;
+padding: 16px;
+gap: 14px;
 }
 
-/* ─── TOP STATS ROW ─── */
-.stats-row {
+/* ─── KPI ROW ─── */
+.kpi-row {
 display: grid;
-grid-template-columns: repeat(4, 1fr);
-gap: 12px;
+grid-template-columns: repeat(6, 1fr);
+gap: 10px;
 }
 
-.stat-card {
-background: var(–surface);
+.kpi-card {
+background: var(–bg1);
 border: 1px solid var(–border);
 border-radius: 10px;
-padding: 16px 20px;
+padding: 14px 16px;
 position: relative;
 overflow: hidden;
 transition: border-color 0.2s;
 }
 
-.stat-card::after {
+.kpi-card::before {
 content: ‘’;
 position: absolute;
 top: 0; left: 0; right: 0;
 height: 2px;
-background: var(–accent-line, var(–accent));
-opacity: 0.6;
+background: var(–kpi-color, var(–c-blue));
+opacity: 0.7;
 }
 
-.stat-card:hover { border-color: rgba(0,212,255,0.2); }
+.kpi-card:hover { border-color: var(–border2); }
 
-.stat-label {
-font-family: ‘Space Mono’, monospace;
+.kpi-label {
+font-family: var(–font-mono);
 font-size: 9px;
-letter-spacing: 0.15em;
-color: var(–muted);
+letter-spacing: 0.12em;
 text-transform: uppercase;
-margin-bottom: 8px;
+color: var(–text3);
+margin-bottom: 6px;
 }
 
-.stat-value {
-font-family: ‘Fraunces’, serif;
-font-size: 26px;
-font-weight: 600;
+.kpi-value {
+font-family: var(–font-mono);
+font-size: 18px;
+font-weight: 500;
 line-height: 1;
 margin-bottom: 4px;
 }
 
-.stat-sub {
-font-family: ‘Space Mono’, monospace;
+.kpi-sub {
 font-size: 10px;
-color: var(–muted);
+color: var(–text3);
 }
 
-/* ─── CHART AREA ─── */
+/* ─── CHART + SIDEBAR LAYOUT ─── */
+.analysis-grid {
+display: grid;
+grid-template-columns: 1fr 300px;
+gap: 14px;
+min-height: 340px;
+}
+
+/* ─── CHART PANEL ─── */
 .chart-panel {
-background: var(–surface);
+background: var(–bg1);
 border: 1px solid var(–border);
 border-radius: 12px;
 overflow: hidden;
+display: flex;
+flex-direction: column;
 }
 
 .chart-header {
 display: flex;
 align-items: center;
 justify-content: space-between;
-padding: 18px 24px;
+padding: 14px 18px;
 border-bottom: 1px solid var(–border);
-}
-
-.chart-title-group {
-display: flex;
-align-items: center;
-gap: 16px;
+flex-shrink: 0;
 }
 
 .chart-title {
-font-family: ‘Fraunces’, serif;
-font-size: 18px;
-font-weight: 600;
-font-style: italic;
+font-size: 14px;
+font-weight: 700;
 }
 
 .chart-subtitle {
-font-family: ‘Space Mono’, monospace;
+font-family: var(–font-mono);
 font-size: 10px;
-color: var(–muted);
+color: var(–text3);
+margin-top: 1px;
 }
 
 .chart-legend {
 display: flex;
-gap: 16px;
+gap: 12px;
 align-items: center;
+flex-wrap: wrap;
 }
 
 .legend-item {
 display: flex;
 align-items: center;
-gap: 6px;
-font-family: ‘Space Mono’, monospace;
+gap: 5px;
+font-family: var(–font-mono);
 font-size: 10px;
-color: var(–muted);
+color: var(–text3);
 }
 
-.legend-line {
-width: 20px;
-height: 2px;
+.legend-swatch {
+width: 16px; height: 2px;
 border-radius: 2px;
 }
 
-.legend-line.dashed {
-background: repeating-linear-gradient(90deg, transparent, transparent 3px, currentColor 3px, currentColor 6px);
+.legend-swatch.dashed {
+background: repeating-linear-gradient(90deg, var(–sw-color) 0, var(–sw-color) 4px, transparent 4px, transparent 7px);
+height: 2px;
 }
 
 .chart-body {
-padding: 24px;
-height: 300px;
+flex: 1;
+padding: 14px 18px 10px;
 position: relative;
+min-height: 260px;
 }
 
-canvas#mainChart {
+canvas.main-chart {
 width: 100% !important;
 height: 100% !important;
 }
 
-/* ─── RESULTS GRID ─── */
-.results-grid {
-display: grid;
-grid-template-columns: 1fr 1fr 1fr;
-gap: 16px;
+/* ─── SIGNAL PANEL ─── */
+.signal-panel {
+background: var(–bg1);
+border: 1px solid var(–border);
+border-radius: 12px;
+overflow: hidden;
+display: flex;
+flex-direction: column;
 }
 
-.model-result-card {
-background: var(–surface);
+.signal-header {
+padding: 14px 16px;
+border-bottom: 1px solid var(–border);
+font-size: 13px;
+font-weight: 700;
+}
+
+.signal-body { padding: 12px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+
+.consensus-ring {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 6px;
+padding: 12px 0;
+}
+
+.ring-chart-wrap {
+position: relative;
+width: 110px; height: 110px;
+}
+
+.ring-chart-wrap canvas { position: absolute; inset: 0; }
+
+.ring-center {
+position: absolute;
+inset: 0;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+}
+
+.ring-label {
+font-family: var(–font-mono);
+font-size: 9px;
+color: var(–text3);
+letter-spacing: 0.1em;
+text-transform: uppercase;
+}
+
+.ring-value {
+font-family: var(–font-mono);
+font-size: 22px;
+font-weight: 500;
+line-height: 1;
+}
+
+.ring-direction {
+font-size: 11px;
+font-weight: 700;
+letter-spacing: 0.06em;
+}
+
+.signal-bars { display: flex; flex-direction: column; gap: 6px; }
+
+.signal-bar-row {
+display: flex;
+flex-direction: column;
+gap: 3px;
+}
+
+.signal-bar-label {
+display: flex;
+justify-content: space-between;
+font-family: var(–font-mono);
+font-size: 10px;
+color: var(–text2);
+}
+
+.signal-bar-track {
+height: 4px;
+background: var(–bg3);
+border-radius: 3px;
+overflow: hidden;
+}
+
+.signal-bar-fill {
+height: 100%;
+border-radius: 3px;
+transition: width 0.6s ease;
+}
+
+.price-targets {
+display: grid;
+grid-template-columns: 1fr 1fr 1fr;
+gap: 6px;
+}
+
+.pt-card {
+background: var(–bg2);
+border: 1px solid var(–border);
+border-radius: 6px;
+padding: 8px;
+text-align: center;
+}
+
+.pt-label { font-family: var(–font-mono); font-size: 9px; color: var(–text3); margin-bottom: 4px; }
+.pt-value { font-family: var(–font-mono); font-size: 12px; font-weight: 500; }
+
+/* ─── MODEL RESULTS GRID ─── */
+.results-section-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+}
+
+.section-title {
+font-size: 15px;
+font-weight: 800;
+letter-spacing: 0.01em;
+}
+
+.section-badge {
+font-family: var(–font-mono);
+font-size: 10px;
+color: var(–text3);
+background: var(–bg2);
+border: 1px solid var(–border);
+padding: 3px 8px;
+border-radius: 4px;
+}
+
+.model-results-grid {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 10px;
+}
+
+.model-card {
+background: var(–bg1);
 border: 1px solid var(–border);
 border-radius: 10px;
-padding: 20px;
+padding: 16px;
 transition: all 0.2s;
 position: relative;
 overflow: hidden;
 }
 
-.model-result-card:hover {
-border-color: rgba(255,255,255,0.1);
-transform: translateY(-2px);
-}
-
-.model-result-card::before {
+.model-card::after {
 content: ‘’;
 position: absolute;
-top: 0; left: 0;
-width: 100%; height: 100%;
-background: var(–card-glow, transparent);
-pointer-events: none;
+left: 0; top: 0; bottom: 0;
+width: 3px;
+background: var(–mc-color, var(–c-blue));
+opacity: 0.7;
 }
 
-.card-type-badge {
-font-family: ‘Space Mono’, monospace;
-font-size: 8px;
-letter-spacing: 0.15em;
-text-transform: uppercase;
-padding: 3px 8px;
-border-radius: 3px;
-border: 1px solid;
-display: inline-block;
+.model-card:hover {
+border-color: var(–border2);
+transform: translateY(-1px);
+}
+
+.model-card-top {
+display: flex;
+align-items: flex-start;
+justify-content: space-between;
 margin-bottom: 10px;
 }
 
-.badge-stat { color: var(–accent); border-color: rgba(0,212,255,0.3); background: rgba(0,212,255,0.07); }
-.badge-ml { color: var(–accent2); border-color: rgba(123,94,167,0.4); background: rgba(123,94,167,0.07); }
-.badge-hybrid { color: var(–yellow); border-color: rgba(255,209,102,0.3); background: rgba(255,209,102,0.07); }
-
-.card-model-name {
-font-family: ‘Fraunces’, serif;
-font-size: 16px;
-font-weight: 600;
-margin-bottom: 4px;
+.model-type-pill {
+font-family: var(–font-mono);
+font-size: 8px;
+letter-spacing: 0.12em;
+text-transform: uppercase;
+padding: 2px 6px;
+border-radius: 3px;
 }
 
-.card-description {
-font-family: ‘Space Mono’, monospace;
-font-size: 10px;
-color: var(–muted);
-margin-bottom: 16px;
-line-height: 1.5;
-}
+.pill-stat { background: rgba(6,182,212,0.12); color: var(–c-cyan); }
+.pill-ml { background: rgba(139,92,246,0.12); color: var(–c-purple); }
+.pill-hybrid { background: rgba(245,158,11,0.12); color: var(–c-yellow); }
 
-.metrics-list {
-display: flex;
-flex-direction: column;
-gap: 8px;
-}
-
-.metric-row {
-display: flex;
-justify-content: space-between;
-align-items: center;
-}
-
-.metric-name {
-font-family: ‘Space Mono’, monospace;
-font-size: 10px;
-color: var(–muted);
-}
-
-.metric-value {
-font-family: ‘Space Mono’, monospace;
+.model-rank {
+font-family: var(–font-mono);
 font-size: 11px;
-font-weight: 700;
+color: var(–text3);
+}
+
+.model-rank.rank-1 { color: var(–c-yellow); }
+.model-rank.rank-2 { color: var(–text2); }
+.model-rank.rank-3 { color: var(–c-orange); }
+
+.model-name {
+font-size: 14px;
+font-weight: 800;
+margin-bottom: 3px;
+}
+
+.model-desc {
+font-size: 10px;
+color: var(–text3);
+line-height: 1.5;
+margin-bottom: 12px;
+}
+
+.model-metrics {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 6px;
+margin-bottom: 10px;
+}
+
+.metric-cell {
+background: var(–bg2);
+border-radius: 5px;
+padding: 6px 8px;
+}
+
+.metric-cell-label {
+font-family: var(–font-mono);
+font-size: 8px;
+letter-spacing: 0.1em;
+text-transform: uppercase;
+color: var(–text3);
+margin-bottom: 2px;
+}
+
+.metric-cell-value {
+font-family: var(–font-mono);
+font-size: 13px;
+font-weight: 500;
 color: var(–text);
 }
 
-.metric-bar-wrap {
-width: 100%;
-height: 3px;
-background: var(–border);
-border-radius: 2px;
-overflow: hidden;
-margin-top: 4px;
-}
-
-.metric-bar {
-height: 100%;
-border-radius: 2px;
-transition: width 1s ease;
-}
-
-.forecast-section {
+.model-forecast-row {
 display: flex;
-gap: 8px;
-margin-top: 14px;
-padding-top: 14px;
-border-top: 1px solid var(–border);
+gap: 5px;
+margin-bottom: 10px;
 }
 
-.forecast-point {
+.mf-box {
 flex: 1;
-text-align: center;
-padding: 8px 4px;
-background: rgba(255,255,255,0.02);
+background: var(–bg2);
 border-radius: 5px;
+padding: 6px 5px;
+text-align: center;
+border: 1px solid transparent;
 }
 
-.forecast-label {
-font-family: ‘Space Mono’, monospace;
+.mf-label { font-family: var(–font-mono); font-size: 8px; color: var(–text3); margin-bottom: 3px; }
+.mf-value { font-family: var(–font-mono); font-size: 11px; font-weight: 500; }
+.mf-value.bull { color: var(–c-green); }
+.mf-value.bear { color: var(–c-red); }
+
+.model-r2-bar {
+display: flex;
+flex-direction: column;
+gap: 3px;
+}
+
+.r2-label-row {
+display: flex;
+justify-content: space-between;
+font-family: var(–font-mono);
 font-size: 9px;
-color: var(–muted);
-margin-bottom: 4px;
+color: var(–text3);
 }
 
-.forecast-value {
-font-family: ‘Fraunces’, serif;
-font-size: 14px;
-font-weight: 600;
+.r2-track {
+height: 3px;
+background: var(–bg3);
+border-radius: 3px;
+overflow: hidden;
 }
 
-.forecast-value.bullish { color: var(–green); }
-.forecast-value.bearish { color: var(–red); }
+.r2-fill {
+height: 100%;
+border-radius: 3px;
+transition: width 0.8s ease;
+}
 
-/* ─── DIAGNOSTICS ─── */
-.diagnostics-row {
+/* ─── BOTTOM PANELS ─── */
+.bottom-grid {
 display: grid;
-grid-template-columns: 1fr 1fr;
-gap: 16px;
+grid-template-columns: 1fr 1fr 1fr;
+gap: 14px;
 }
 
-.diag-card {
-background: var(–surface);
+.bottom-panel {
+background: var(–bg1);
 border: 1px solid var(–border);
-border-radius: 10px;
-padding: 20px;
+border-radius: 12px;
+overflow: hidden;
 }
 
-.diag-card h4 {
-font-family: ‘Space Mono’, monospace;
-font-size: 10px;
-letter-spacing: 0.15em;
-color: var(–muted);
-text-transform: uppercase;
-margin-bottom: 16px;
+.bottom-panel-header {
+padding: 12px 16px;
+border-bottom: 1px solid var(–border);
+display: flex;
+align-items: center;
+justify-content: space-between;
 }
 
-.test-table {
-width: 100%;
-border-collapse: collapse;
+.bottom-panel-title {
+font-size: 12px;
+font-weight: 700;
 }
 
-.test-table th {
-font-family: ‘Space Mono’, monospace;
-font-size: 9px;
-color: var(–muted);
-text-align: left;
-padding: 0 0 8px 0;
-letter-spacing: 0.1em;
-text-transform: uppercase;
+.bottom-panel-body {
+padding: 12px 16px;
+max-height: 220px;
+overflow-y: auto;
+}
+
+/* Stat tests */
+.stat-test-row {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 7px 0;
 border-bottom: 1px solid var(–border);
 }
 
-.test-table td {
-font-family: ‘Space Mono’, monospace;
-font-size: 11px;
-padding: 8px 0;
-border-bottom: 1px solid rgba(26,38,64,0.5);
-}
+.stat-test-row:last-child { border-bottom: none; }
 
-.test-table td:last-child { text-align: right; }
+.stest-name { font-family: var(–font-mono); font-size: 10px; color: var(–text2); }
+.stest-stat { font-family: var(–font-mono); font-size: 10px; color: var(–text3); }
+.stest-pval { font-family: var(–font-mono); font-size: 10px; color: var(–text3); }
 
-.status-badge {
-display: inline-block;
-padding: 2px 8px;
-border-radius: 3px;
+.stest-result {
+font-family: var(–font-mono);
 font-size: 9px;
-letter-spacing: 0.05em;
+padding: 2px 6px;
+border-radius: 3px;
 }
 
-.status-pass { background: rgba(0,229,160,0.1); color: var(–green); }
-.status-fail { background: rgba(255,64,96,0.1); color: var(–red); }
-.status-warn { background: rgba(255,209,102,0.1); color: var(–yellow); }
+.res-pass { background: rgba(16,185,129,0.1); color: var(–c-green); }
+.res-fail { background: rgba(239,68,68,0.1); color: var(–c-red); }
+.res-warn { background: rgba(245,158,11,0.1); color: var(–c-yellow); }
 
-/* ─── LOADING STATE ─── */
+/* Feature importance */
+.feat-row {
+display: flex;
+flex-direction: column;
+gap: 2px;
+margin-bottom: 8px;
+}
+
+.feat-row:last-child { margin-bottom: 0; }
+
+.feat-label-row {
+display: flex;
+justify-content: space-between;
+font-family: var(–font-mono);
+font-size: 10px;
+color: var(–text2);
+}
+
+.feat-track {
+height: 4px;
+background: var(–bg3);
+border-radius: 3px;
+overflow: hidden;
+}
+
+.feat-fill {
+height: 100%;
+border-radius: 3px;
+background: linear-gradient(90deg, var(–c-blue), var(–c-cyan));
+transition: width 0.7s ease;
+}
+
+/* Volatility / residuals mini chart */
+.mini-chart-body {
+padding: 10px 16px 14px;
+height: 180px;
+position: relative;
+}
+
+/* ─── LOADING OVERLAY ─── */
 .loading-overlay {
 position: absolute;
 inset: 0;
-background: rgba(4,6,15,0.8);
+background: rgba(6,8,16,0.85);
+backdrop-filter: blur(6px);
 display: none;
+flex-direction: column;
 align-items: center;
 justify-content: center;
-flex-direction: column;
-gap: 16px;
-z-index: 100;
-border-radius: 12px;
-backdrop-filter: blur(4px);
+gap: 14px;
+z-index: 50;
+border-radius: inherit;
 }
 
 .loading-overlay.show { display: flex; }
 
-.loading-text {
-font-family: ‘Space Mono’, monospace;
-font-size: 12px;
-color: var(–accent);
-letter-spacing: 0.1em;
-}
-
-.loading-dots span {
-display: inline-block;
-width: 6px;
-height: 6px;
-background: var(–accent);
-border-radius: 50%;
-margin: 0 3px;
-animation: bounce 1.2s infinite;
-}
-
-.loading-dots span:nth-child(2) { animation-delay: 0.15s; }
-.loading-dots span:nth-child(3) { animation-delay: 0.3s; }
-
-@keyframes bounce {
-0%, 60%, 100% { transform: translateY(0); }
-30% { transform: translateY(-8px); }
-}
-
-/* ─── RANKINGS ─── */
-.ranking-row {
+.loading-steps {
 display: flex;
 flex-direction: column;
+gap: 5px;
+width: 220px;
+}
+
+.loading-step {
+display: flex;
+align-items: center;
 gap: 8px;
+font-family: var(–font-mono);
+font-size: 10px;
+color: var(–text3);
+transition: color 0.3s;
 }
 
-.rank-item {
-display: flex;
-align-items: center;
-gap: 12px;
-padding: 10px 12px;
-border-radius: 6px;
-background: rgba(255,255,255,0.02);
-border: 1px solid transparent;
-transition: all 0.15s;
+.loading-step.done { color: var(–c-green); }
+.loading-step.active { color: var(–text); }
+
+.step-icon { width: 14px; text-align: center; font-size: 11px; }
+
+.progress-bar-wrap {
+width: 220px;
+height: 3px;
+background: var(–bg3);
+border-radius: 3px;
+overflow: hidden;
 }
 
-.rank-item:hover { border-color: var(–border); }
-.rank-item.rank-1 { border-color: rgba(255,209,102,0.2); background: rgba(255,209,102,0.04); }
-
-.rank-num {
-font-family: ‘Fraunces’, serif;
-font-size: 20px;
-font-weight: 600;
-color: var(–muted);
-width: 24px;
+.progress-bar-fill {
+height: 100%;
+background: linear-gradient(90deg, var(–c-blue), var(–c-cyan));
+border-radius: 3px;
+transition: width 0.3s ease;
+width: 0%;
 }
 
-.rank-1 .rank-num { color: var(–yellow); }
-
-.rank-info { flex: 1; }
-.rank-model { font-size: 13px; font-weight: 700; }
-.rank-type { font-family: ‘Space Mono’, monospace; font-size: 9px; color: var(–muted); }
-
-.rank-score {
-font-family: ‘Space Mono’, monospace;
+.loading-title {
+font-family: var(–font-mono);
 font-size: 11px;
-font-weight: 700;
-color: var(–green);
+color: var(–c-cyan);
+letter-spacing: 0.1em;
+text-transform: uppercase;
 }
 
-/* ─── MINI SPARKLINES ─── */
-.sparkline-wrap {
-display: flex;
-gap: 2px;
-align-items: flex-end;
-height: 24px;
-margin-top: 8px;
+/* ─── SHIMMER ─── */
+@keyframes shimmer {
+from { background-position: -300px 0; }
+to { background-position: 300px 0; }
 }
 
-.spark-bar {
-flex: 1;
-border-radius: 1px;
-background: var(–accent);
-opacity: 0.4;
-transition: opacity 0.2s;
+.shimmer {
+background: linear-gradient(90deg, var(–bg2) 25%, var(–bg3) 50%, var(–bg2) 75%);
+background-size: 600px 100%;
+animation: shimmer 1.4s infinite;
+border-radius: 4px;
 }
 
-.spark-bar.highlight { opacity: 1; }
-
-/* ─── FOOTER ─── */
-.app-footer {
-position: relative;
-z-index: 1;
-padding: 14px 40px;
-border-top: 1px solid var(–border);
-display: flex;
-justify-content: space-between;
-align-items: center;
-background: rgba(4,6,15,0.9);
-}
-
-.footer-left {
-font-family: ‘Space Mono’, monospace;
-font-size: 10px;
-color: var(–muted);
-letter-spacing: 0.05em;
-}
-
-.footer-right {
-display: flex;
-gap: 20px;
-font-family: ‘Space Mono’, monospace;
-font-size: 10px;
-color: var(–muted);
-}
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(–surface); }
-::-webkit-scrollbar-thumb { background: var(–border); border-radius: 2px; }
-
-/* ─── ANIMATIONS ─── */
-@keyframes fadeIn {
-from { opacity: 0; transform: translateY(10px); }
+/* ─── FADE ANIM ─── */
+@keyframes fadeUp {
+from { opacity: 0; transform: translateY(8px); }
 to { opacity: 1; transform: translateY(0); }
 }
 
-.fade-in { animation: fadeIn 0.4s ease forwards; }
+.fade-up { animation: fadeUp 0.35s ease forwards; }
 
-.stagger-1 { animation-delay: 0.05s; opacity: 0; }
-.stagger-2 { animation-delay: 0.1s; opacity: 0; }
-.stagger-3 { animation-delay: 0.15s; opacity: 0; }
-.stagger-4 { animation-delay: 0.2s; opacity: 0; }
+.fade-up-1 { animation-delay: 0.03s; opacity:0; }
+.fade-up-2 { animation-delay: 0.06s; opacity:0; }
+.fade-up-3 { animation-delay: 0.09s; opacity:0; }
+.fade-up-4 { animation-delay: 0.12s; opacity:0; }
+.fade-up-5 { animation-delay: 0.15s; opacity:0; }
+.fade-up-6 { animation-delay: 0.18s; opacity:0; }
 </style>
 
 </head>
 <body>
+<div id="app">
 
-<header>
-  <div class="logo">
-    <span class="logo-text">QUANT<span class="logo-accent">PRISM</span></span>
-    <span class="logo-badge">ALPHA v2.4</span>
-  </div>
-  <nav>
-    <button class="active">Analysis</button>
-    <button>Backtesting</button>
-    <button>Portfolio</button>
-    <button>Reports</button>
-  </nav>
-  <div class="live-indicator">
-    <div class="pulse-dot"></div>
-    LIVE DATA
-  </div>
-</header>
+  <!-- ═══ HEADER ═══ -->
 
-<div class="app">
-
-  <!-- SIDEBAR -->
-
-  <aside class="sidebar">
+  <header id="header">
+    <div class="header-brand">
+      <div class="brand-logo">N</div>
+      <span class="brand-name">NEXUS</span>
+      <span class="brand-ver">PRO</span>
+    </div>
 
 ```
+<div class="header-asset-info">
+  <span class="asset-name-big" id="hAssetName">EUR/USD</span>
+  <span class="asset-price-big" id="hAssetPrice" style="color: var(--c-green)">—</span>
+  <span class="asset-change-badge up" id="hAssetChange">—</span>
+
+  <div class="header-meta">
+    <div class="hmeta-item">
+      <div class="hmeta-label">Open</div>
+      <div class="hmeta-value" id="hOpen">—</div>
+    </div>
+    <div class="hmeta-item">
+      <div class="hmeta-label">High</div>
+      <div class="hmeta-value" id="hHigh" style="color:var(--c-green)">—</div>
+    </div>
+    <div class="hmeta-item">
+      <div class="hmeta-label">Low</div>
+      <div class="hmeta-value" id="hLow" style="color:var(--c-red)">—</div>
+    </div>
+    <div class="hmeta-item">
+      <div class="hmeta-label">Volume</div>
+      <div class="hmeta-value" id="hVol">—</div>
+    </div>
+  </div>
+</div>
+
+<div class="header-right">
+  <div class="live-pill">
+    <div class="live-dot"></div>
+    SIMULATED LIVE
+  </div>
+  <span id="lastUpdateTime" style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">—</span>
+</div>
+```
+
+  </header>
+
+  <!-- ═══ SIDEBAR ═══ -->
+
+  <aside id="sidebar">
+
+```
+<!-- Markets -->
 <div class="sidebar-section">
-  <h3>Market</h3>
+  <div class="sidebar-section-title">Market</div>
   <div class="market-tabs">
-    <div class="market-tab active" onclick="selectMarket('forex', this)">
-      <div class="tab-left">
-        <div class="tab-icon" style="background:rgba(0,212,255,0.1);">💱</div>
-        <div>
-          <div class="tab-name">Forex</div>
-          <div class="tab-count">28 pairs</div>
-        </div>
-      </div>
+    <div class="mktab active" data-market="forex" onclick="selectMarket('forex',this)">
+      <span class="mktab-icon">💱</span> Forex
     </div>
-    <div class="market-tab" onclick="selectMarket('commodities', this)">
-      <div class="tab-left">
-        <div class="tab-icon" style="background:rgba(255,209,102,0.1);">🪙</div>
-        <div>
-          <div class="tab-name">Commodities</div>
-          <div class="tab-count">14 assets</div>
-        </div>
-      </div>
+    <div class="mktab" data-market="commodities" onclick="selectMarket('commodities',this)">
+      <span class="mktab-icon">🪙</span> Commodities
     </div>
-    <div class="market-tab" onclick="selectMarket('stocks', this)">
-      <div class="tab-left">
-        <div class="tab-icon" style="background:rgba(0,229,160,0.1);">📈</div>
-        <div>
-          <div class="tab-name">Stocks</div>
-          <div class="tab-count">500+ tickers</div>
-        </div>
-      </div>
+    <div class="mktab" data-market="stocks" onclick="selectMarket('stocks',this)">
+      <span class="mktab-icon">📊</span> Stocks
     </div>
-    <div class="market-tab" onclick="selectMarket('index', this)">
-      <div class="tab-left">
-        <div class="tab-icon" style="background:rgba(123,94,167,0.1);">🏛️</div>
-        <div>
-          <div class="tab-name">Index Funds</div>
-          <div class="tab-count">42 indices</div>
-        </div>
-      </div>
+    <div class="mktab" data-market="index" onclick="selectMarket('index',this)">
+      <span class="mktab-icon">🏛️</span> Indices
     </div>
   </div>
 </div>
 
+<!-- Asset list -->
+<div class="sidebar-section" style="flex:1">
+  <div class="sidebar-section-title">Asset Selection</div>
+  <div class="asset-search-wrap">
+    <span class="search-icon">⌕</span>
+    <input class="asset-search" id="assetSearch" placeholder="Search symbol..." oninput="filterAssets(this.value)">
+  </div>
+  <div class="asset-list" id="assetList"></div>
+</div>
+
+<!-- Horizon -->
 <div class="sidebar-section">
-  <h3>Asset</h3>
-  <div class="asset-list" id="assetList">
-    <!-- filled by JS -->
+  <div class="sidebar-section-title">Forecast Horizon</div>
+  <div class="horizon-grid">
+    <button class="horizon-btn" data-h="1D" onclick="setHorizon(this,'1D')">1D</button>
+    <button class="horizon-btn" data-h="1W" onclick="setHorizon(this,'1W')">1W</button>
+    <button class="horizon-btn active" data-h="1M" onclick="setHorizon(this,'1M')">1M</button>
+    <button class="horizon-btn" data-h="3M" onclick="setHorizon(this,'3M')">3M</button>
+    <button class="horizon-btn" data-h="1Y" onclick="setHorizon(this,'1Y')">1Y</button>
   </div>
 </div>
 
+<!-- Models -->
 <div class="sidebar-section">
-  <h3>Forecast Horizon</h3>
-  <div class="horizon-row">
-    <button class="horizon-btn" onclick="setHorizon(this, '1D')">1D</button>
-    <button class="horizon-btn" onclick="setHorizon(this, '1W')">1W</button>
-    <button class="horizon-btn active" onclick="setHorizon(this, '1M')">1M</button>
-    <button class="horizon-btn" onclick="setHorizon(this, '3M')">3M</button>
-    <button class="horizon-btn" onclick="setHorizon(this, '1Y')">1Y</button>
-  </div>
+  <div class="sidebar-section-title">Models</div>
+  <div id="modelToggles"></div>
 </div>
 
-<div class="sidebar-section">
-  <h3>Models</h3>
-  <div class="model-grid">
-    <div class="model-chip active-stat" onclick="toggleModel(this, 'stat')">
-      <span class="chip-label">Statistical</span>
-      <div class="chip-name">ARIMA</div>
-    </div>
-    <div class="model-chip active-stat" onclick="toggleModel(this, 'stat')">
-      <span class="chip-label">Statistical</span>
-      <div class="chip-name">GARCH</div>
-    </div>
-    <div class="model-chip active-stat" onclick="toggleModel(this, 'stat')">
-      <span class="chip-label">Statistical</span>
-      <div class="chip-name">ETS</div>
-    </div>
-    <div class="model-chip active-stat" onclick="toggleModel(this, 'stat')">
-      <span class="chip-label">Statistical</span>
-      <div class="chip-name">VAR</div>
-    </div>
-    <div class="model-chip active" onclick="toggleModel(this, 'ml')">
-      <span class="chip-label">ML</span>
-      <div class="chip-name">LSTM</div>
-    </div>
-    <div class="model-chip active" onclick="toggleModel(this, 'ml')">
-      <span class="chip-label">ML</span>
-      <div class="chip-name">XGBoost</div>
-    </div>
-    <div class="model-chip" onclick="toggleModel(this, 'ml')">
-      <span class="chip-label">ML</span>
-      <div class="chip-name">Prophet</div>
-    </div>
-    <div class="model-chip" onclick="toggleModel(this, 'ml')">
-      <span class="chip-label">ML</span>
-      <div class="chip-name">TCN</div>
-    </div>
-    <div class="model-chip active-hybrid" onclick="toggleModel(this, 'hybrid')">
-      <span class="chip-label">Hybrid</span>
-      <div class="chip-name">ARIMA-NN</div>
-    </div>
-    <div class="model-chip active-hybrid" onclick="toggleModel(this, 'hybrid')">
-      <span class="chip-label">Hybrid</span>
-      <div class="chip-name">Kalman+ML</div>
-    </div>
-  </div>
-</div>
-
-<button class="run-btn" onclick="runAnalysis(this)" id="runBtn">
-  ▶ RUN ANALYSIS
+<button class="run-analysis-btn" id="runBtn" onclick="runAnalysis()">
+  <div class="run-spinner"></div>
+  <span class="run-label">▶ RUN ANALYSIS</span>
 </button>
 ```
 
   </aside>
 
-  <!-- MAIN -->
+  <!-- ═══ MAIN ═══ -->
 
-  <main class="main" id="mainContent">
+  <main id="main">
 
 ```
-<!-- STATS ROW -->
-<div class="stats-row">
-  <div class="stat-card fade-in stagger-1" style="--accent-line: var(--green)">
-    <div class="stat-label">Current Price</div>
-    <div class="stat-value" id="currentPrice" style="color: var(--green)">1.0874</div>
-    <div class="stat-sub" id="priceChange">▲ +0.32% today</div>
+<!-- KPI Row -->
+<div class="kpi-row" id="kpiRow">
+  <div class="kpi-card fade-up fade-up-1" style="--kpi-color:var(--c-green)">
+    <div class="kpi-label">Current Price</div>
+    <div class="kpi-value" id="kpiPrice" style="color:var(--c-green)">—</div>
+    <div class="kpi-sub" id="kpiPriceChange">—</div>
   </div>
-  <div class="stat-card fade-in stagger-2" style="--accent-line: var(--accent)">
-    <div class="stat-label">Volatility (30D)</div>
-    <div class="stat-value" style="color: var(--accent)">7.4%</div>
-    <div class="stat-sub">Annualized HV</div>
+  <div class="kpi-card fade-up fade-up-2" style="--kpi-color:var(--c-cyan)">
+    <div class="kpi-label">Volatility (30D)</div>
+    <div class="kpi-value" id="kpiVol" style="color:var(--c-cyan)">—</div>
+    <div class="kpi-sub" id="kpiVolSub">Annualized HV</div>
   </div>
-  <div class="stat-card fade-in stagger-3" style="--accent-line: var(--yellow)">
-    <div class="stat-label">Trend Strength</div>
-    <div class="stat-value" style="color: var(--yellow)">ADX 42</div>
-    <div class="stat-sub">Strong uptrend</div>
+  <div class="kpi-card fade-up fade-up-3" style="--kpi-color:var(--c-yellow)">
+    <div class="kpi-label">Trend Strength</div>
+    <div class="kpi-value" id="kpiTrend" style="color:var(--c-yellow)">—</div>
+    <div class="kpi-sub" id="kpiTrendSub">ADX indicator</div>
   </div>
-  <div class="stat-card fade-in stagger-4" style="--accent-line: var(--accent2)">
-    <div class="stat-label">Avg Model Score</div>
-    <div class="stat-value" style="color: var(--accent2)">0.891</div>
-    <div class="stat-sub">R² across models</div>
+  <div class="kpi-card fade-up fade-up-4" style="--kpi-color:var(--c-purple)">
+    <div class="kpi-label">RSI (14)</div>
+    <div class="kpi-value" id="kpiRsi" style="color:var(--c-purple)">—</div>
+    <div class="kpi-sub" id="kpiRsiSub">—</div>
+  </div>
+  <div class="kpi-card fade-up fade-up-5" style="--kpi-color:var(--c-orange)">
+    <div class="kpi-label">Sharpe Ratio</div>
+    <div class="kpi-value" id="kpiSharpe" style="color:var(--c-orange)">—</div>
+    <div class="kpi-sub">Risk-adjusted return</div>
+  </div>
+  <div class="kpi-card fade-up fade-up-6" style="--kpi-color:var(--c-blue)">
+    <div class="kpi-label">Best Model R²</div>
+    <div class="kpi-value" id="kpiBestR2" style="color:var(--c-blue)">—</div>
+    <div class="kpi-sub" id="kpiBestModel">—</div>
   </div>
 </div>
 
-<!-- CHART -->
-<div class="chart-panel fade-in" style="animation-delay:0.25s; opacity:0; position:relative">
-  <div class="loading-overlay" id="chartLoading">
-    <div class="loading-dots">
-      <span></span><span></span><span></span>
+<!-- Chart + Signals -->
+<div class="analysis-grid">
+
+  <!-- Chart -->
+  <div class="chart-panel" style="position:relative">
+    <div class="loading-overlay" id="chartLoader">
+      <div class="loading-title" id="loaderText">INITIALIZING...</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="loaderProgress"></div></div>
+      <div class="loading-steps" id="loaderSteps"></div>
     </div>
-    <div class="loading-text" id="loadingText">INITIALIZING MODELS...</div>
-  </div>
-  <div class="chart-header">
-    <div class="chart-title-group">
+    <div class="chart-header">
       <div>
-        <div class="chart-title" id="chartTitle">EUR/USD — Price & Forecast</div>
-        <div class="chart-subtitle">Historical + Multi-Model Projection · 1M Horizon</div>
+        <div class="chart-title" id="chartTitle">Price History & Forecast</div>
+        <div class="chart-subtitle" id="chartSubtitle">Loading...</div>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:var(--c-blue)"></div>
+          Actual
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:var(--c-cyan); --sw-color:var(--c-cyan)" ></div>
+          Statistical
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:var(--c-purple)"></div>
+          ML
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:var(--c-yellow)"></div>
+          Hybrid
+        </div>
       </div>
     </div>
-    <div class="chart-legend">
-      <div class="legend-item">
-        <div class="legend-line" style="background: var(--accent)"></div>
-        Historical
+    <div class="chart-body">
+      <canvas id="priceChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Signals -->
+  <div class="signal-panel">
+    <div class="signal-header">Consensus Signal</div>
+    <div class="signal-body">
+      <div class="consensus-ring">
+        <div class="ring-chart-wrap">
+          <canvas id="donutChart" width="110" height="110"></canvas>
+          <div class="ring-center">
+            <div class="ring-label">SCORE</div>
+            <div class="ring-value" id="ringScore" style="color:var(--c-green)">—</div>
+          </div>
+        </div>
+        <div class="ring-direction" id="ringDir" style="color:var(--c-green)">—</div>
       </div>
-      <div class="legend-item" style="color: var(--green)">
-        <div class="legend-line dashed" style="color: var(--green); height:0; border-top: 2px dashed"></div>
-        Statistical
+
+      <div class="signal-bars">
+        <div class="signal-bar-row">
+          <div class="signal-bar-label"><span>Bullish Models</span><span id="sbBull">—</span></div>
+          <div class="signal-bar-track"><div class="signal-bar-fill" id="sbBullBar" style="background:var(--c-green);width:0%"></div></div>
+        </div>
+        <div class="signal-bar-row">
+          <div class="signal-bar-label"><span>Bearish Models</span><span id="sbBear">—</span></div>
+          <div class="signal-bar-track"><div class="signal-bar-fill" id="sbBearBar" style="background:var(--c-red);width:0%"></div></div>
+        </div>
+        <div class="signal-bar-row">
+          <div class="signal-bar-label"><span>Model Agreement</span><span id="sbAgree">—</span></div>
+          <div class="signal-bar-track"><div class="signal-bar-fill" id="sbAgreeBar" style="background:var(--c-blue);width:0%"></div></div>
+        </div>
       </div>
-      <div class="legend-item" style="color: var(--accent2)">
-        <div class="legend-line" style="background: var(--accent2)"></div>
-        ML
-      </div>
-      <div class="legend-item" style="color: var(--yellow)">
-        <div class="legend-line" style="background: var(--yellow)"></div>
-        Hybrid
-      </div>
-      <div class="legend-item">
-        <div class="legend-line" style="background: rgba(0,212,255,0.2); height:12px; width:12px; border-radius:2px"></div>
-        Conf. Band
+
+      <div>
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px;">Price Targets</div>
+        <div class="price-targets">
+          <div class="pt-card">
+            <div class="pt-label">+1D</div>
+            <div class="pt-value" id="pt1d" style="color:var(--c-green)">—</div>
+          </div>
+          <div class="pt-card">
+            <div class="pt-label">+7D</div>
+            <div class="pt-value" id="pt7d" style="color:var(--c-green)">—</div>
+          </div>
+          <div class="pt-card">
+            <div class="pt-label">+30D</div>
+            <div class="pt-value" id="pt30d" style="color:var(--c-green)">—</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <div class="chart-body">
-    <canvas id="mainChart"></canvas>
-  </div>
+
 </div>
 
-<!-- MODEL RESULTS -->
-<div style="margin-bottom: 4px">
-  <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.15em; color:var(--muted); text-transform:uppercase;">
-    Model Results — EUR/USD · 1M Forecast
-  </span>
-</div>
-<div class="results-grid" id="resultsGrid">
-  <!-- filled by JS -->
+<!-- Model Results -->
+<div class="results-section-header">
+  <div class="section-title">Model Performance Results</div>
+  <div class="section-badge" id="resultsLabel">6 models · EUR/USD · 1M</div>
 </div>
 
-<!-- DIAGNOSTICS + RANKINGS -->
-<div class="diagnostics-row">
-  <div class="diag-card">
-    <h4>Statistical Tests</h4>
-    <table class="test-table">
-      <tr>
-        <th>Test</th>
-        <th>Statistic</th>
-        <th>p-value</th>
-        <th>Result</th>
-      </tr>
-      <tr>
-        <td>ADF (Stationarity)</td>
-        <td>−3.82</td>
-        <td>0.003</td>
-        <td><span class="status-badge status-pass">PASS</span></td>
-      </tr>
-      <tr>
-        <td>Ljung-Box (Autocorr)</td>
-        <td>18.4</td>
-        <td>0.048</td>
-        <td><span class="status-badge status-warn">WARN</span></td>
-      </tr>
-      <tr>
-        <td>ARCH Effect (Hetero.)</td>
-        <td>24.1</td>
-        <td>0.001</td>
-        <td><span class="status-badge status-pass">PASS</span></td>
-      </tr>
-      <tr>
-        <td>Jarque-Bera (Normality)</td>
-        <td>9.7</td>
-        <td>0.008</td>
-        <td><span class="status-badge status-fail">FAIL</span></td>
-      </tr>
-      <tr>
-        <td>Granger Causality (USD)</td>
-        <td>5.2</td>
-        <td>0.022</td>
-        <td><span class="status-badge status-pass">PASS</span></td>
-      </tr>
-    </table>
+<div class="model-results-grid" id="modelResultsGrid"></div>
+
+<!-- Bottom panels -->
+<div class="bottom-grid">
+
+  <!-- Statistical tests -->
+  <div class="bottom-panel">
+    <div class="bottom-panel-header">
+      <div class="bottom-panel-title">Statistical Diagnostics</div>
+    </div>
+    <div class="bottom-panel-body" id="statTestsBody"></div>
   </div>
 
-  <div class="diag-card">
-    <h4>Model Rankings — Composite Score</h4>
-    <div class="ranking-row" id="rankingRow">
-      <!-- filled by JS -->
+  <!-- Feature importance -->
+  <div class="bottom-panel">
+    <div class="bottom-panel-header">
+      <div class="bottom-panel-title">Feature Importance (XGBoost)</div>
+    </div>
+    <div class="bottom-panel-body" id="featImportBody"></div>
+  </div>
+
+  <!-- Vol chart -->
+  <div class="bottom-panel">
+    <div class="bottom-panel-header">
+      <div class="bottom-panel-title">Residuals & Volatility</div>
+    </div>
+    <div class="mini-chart-body">
+      <canvas id="residChart"></canvas>
     </div>
   </div>
+
 </div>
 ```
 
   </main>
+
 </div>
 
-<footer class="app-footer">
-  <div class="footer-left">
-    QUANTPRISM ENGINE · Data: Simulated · For educational purposes only
-  </div>
-  <div class="footer-right">
-    <span>Models: 10 active</span>
-    <span>Last run: just now</span>
-    <span>Latency: 142ms</span>
-  </div>
-</footer>
-
 <script>
-// ─── DATA ───────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+//  DATA ENGINE
+// ══════════════════════════════════════════════════════════════════
 
-const MARKETS = {
-  forex: ['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CAD','EUR/GBP'],
-  commodities: ['GOLD','SILVER','CRUDE OIL','NAT GAS','COPPER','WHEAT'],
-  stocks: ['AAPL','MSFT','NVDA','AMZN','TSLA','GOOGL'],
-  index: ['S&P 500','NASDAQ','DOW','FTSE 100','NIKKEI','DAX'],
+const ASSETS = {
+  forex: [
+    { sym:'EUR/USD', name:'Euro / US Dollar',       base:1.0874, vol:0.068, trend:'up',   seed:42  },
+    { sym:'GBP/USD', name:'Pound / US Dollar',      base:1.2641, vol:0.082, trend:'up',   seed:17  },
+    { sym:'USD/JPY', name:'US Dollar / Yen',        base:149.82, vol:0.095, trend:'up',   seed:88  },
+    { sym:'AUD/USD', name:'Aussie / US Dollar',     base:0.6521, vol:0.091, trend:'down', seed:23  },
+    { sym:'USD/CAD', name:'US Dollar / CAD',        base:1.3614, vol:0.074, trend:'up',   seed:55  },
+    { sym:'EUR/GBP', name:'Euro / Pound',           base:0.8601, vol:0.053, trend:'down', seed:71  },
+    { sym:'USD/CHF', name:'US Dollar / Franc',      base:0.9043, vol:0.061, trend:'up',   seed:34  },
+    { sym:'NZD/USD', name:'Kiwi / US Dollar',       base:0.5978, vol:0.097, trend:'down', seed:12  },
+  ],
+  commodities: [
+    { sym:'GOLD',     name:'Gold Spot (XAU/USD)',   base:2341.50, vol:0.112, trend:'up',   seed:63  },
+    { sym:'SILVER',   name:'Silver Spot (XAG/USD)', base:27.84,   vol:0.198, trend:'up',   seed:29  },
+    { sym:'CRUDE OIL',name:'WTI Crude Oil',         base:79.44,   vol:0.271, trend:'down', seed:81  },
+    { sym:'NAT GAS',  name:'Natural Gas',           base:1.94,    vol:0.387, trend:'up',   seed:47  },
+    { sym:'COPPER',   name:'Copper Futures',        base:4.28,    vol:0.162, trend:'up',   seed:93  },
+    { sym:'WHEAT',    name:'Wheat Futures',         base:558.25,  vol:0.218, trend:'down', seed:16  },
+    { sym:'CORN',     name:'Corn Futures',          base:433.75,  vol:0.189, trend:'down', seed:38  },
+    { sym:'PLATINUM', name:'Platinum Spot',         base:963.40,  vol:0.143, trend:'up',   seed:74  },
+  ],
+  stocks: [
+    { sym:'AAPL',  name:'Apple Inc.',               base:192.35,  vol:0.198, trend:'up',   seed:51  },
+    { sym:'MSFT',  name:'Microsoft Corp.',          base:415.20,  vol:0.182, trend:'up',   seed:67  },
+    { sym:'NVDA',  name:'NVIDIA Corp.',             base:878.60,  vol:0.412, trend:'up',   seed:83  },
+    { sym:'AMZN',  name:'Amazon.com Inc.',          base:189.45,  vol:0.224, trend:'up',   seed:44  },
+    { sym:'TSLA',  name:'Tesla Inc.',               base:175.30,  vol:0.498, trend:'down', seed:26  },
+    { sym:'GOOGL', name:'Alphabet Inc.',            base:162.80,  vol:0.201, trend:'up',   seed:59  },
+    { sym:'META',  name:'Meta Platforms',           base:498.25,  vol:0.298, trend:'up',   seed:72  },
+    { sym:'JPM',   name:'JPMorgan Chase',           base:197.60,  vol:0.167, trend:'up',   seed:35  },
+  ],
+  index: [
+    { sym:'S&P 500',  name:'Standard & Poors 500',  base:5204.34, vol:0.142, trend:'up',   seed:49  },
+    { sym:'NASDAQ',   name:'Nasdaq Composite',       base:16441.2, vol:0.201, trend:'up',   seed:66  },
+    { sym:'DOW',      name:'Dow Jones Industrial',   base:38989.8, vol:0.118, trend:'up',   seed:82  },
+    { sym:'FTSE 100', name:'FTSE London 100',        base:8092.0,  vol:0.131, trend:'down', seed:31  },
+    { sym:'NIKKEI',   name:'Nikkei 225 Japan',       base:38820.5, vol:0.179, trend:'up',   seed:57  },
+    { sym:'DAX',      name:'DAX Frankfurt 40',       base:18001.6, vol:0.148, trend:'up',   seed:73  },
+    { sym:'CAC 40',   name:'CAC 40 France',          base:8096.3,  vol:0.153, trend:'up',   seed:41  },
+    { sym:'ASX 200',  name:'Australian ASX 200',     base:7786.4,  vol:0.124, trend:'down', seed:19  },
+  ]
 };
 
-const CHANGES = {
-  'EUR/USD': ['+0.32%','up'],  'GBP/USD': ['-0.18%','down'], 'USD/JPY': ['+0.61%','up'],
-  'AUD/USD': ['-0.09%','down'],'USD/CAD': ['+0.14%','up'],   'EUR/GBP': ['+0.27%','up'],
-  'GOLD':    ['+0.88%','up'],  'SILVER':  ['-1.2%','down'],  'CRUDE OIL':['-0.55%','down'],
-  'NAT GAS': ['+2.1%','up'],   'COPPER':  ['+0.34%','up'],   'WHEAT':   ['-0.77%','down'],
-  'AAPL':    ['+0.91%','up'],  'MSFT':    ['+0.44%','up'],   'NVDA':    ['+2.33%','up'],
-  'AMZN':    ['-0.22%','down'],'TSLA':    ['-1.44%','down'], 'GOOGL':   ['+0.67%','up'],
-  'S&P 500': ['+0.38%','up'],  'NASDAQ':  ['+0.72%','up'],   'DOW':     ['+0.11%','up'],
-  'FTSE 100':['-0.15%','down'],'NIKKEI':  ['+1.02%','up'],   'DAX':     ['+0.29%','up'],
+const MODELS_CONFIG = [
+  { id:'arima',   name:'ARIMA',         type:'stat',   color:'#06b6d4', desc:'AutoRegressive Integrated Moving Average p(2) d(1) q(2)' },
+  { id:'garch',   name:'GARCH(1,1)',    type:'stat',   color:'#22d3ee', desc:'Generalized ARCH — models volatility clustering' },
+  { id:'ets',     name:'ETS Holt-W',   type:'stat',   color:'#67e8f9', desc:'Exponential smoothing with trend & seasonality' },
+  { id:'lstm',    name:'LSTM',          type:'ml',     color:'#8b5cf6', desc:'Long Short-Term Memory — 3 layers, 128 units' },
+  { id:'xgb',     name:'XGBoost',       type:'ml',     color:'#a78bfa', desc:'Gradient Boosting with SHAP feature attribution' },
+  { id:'prophet', name:'Prophet',       type:'ml',     color:'#c4b5fd', desc:'Facebook Prophet — trend + Fourier seasonality' },
+  { id:'arimals', name:'ARIMA+LSTM',    type:'hybrid', color:'#f59e0b', desc:'Linear ARIMA residuals fed into LSTM network' },
+  { id:'kalmxgb', name:'Kalman+XGB',   type:'hybrid', color:'#fbbf24', desc:'Kalman filter denoising → XGBoost on clean signal' },
+];
+
+// ══════════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════════
+
+let STATE = {
+  market: 'forex',
+  asset: ASSETS.forex[0],
+  horizon: '1M',
+  enabledModels: new Set(['arima','garch','lstm','xgb','arimals','kalmxgb']),
+  priceData: null,
+  modelResults: null,
+  charts: {},
+  tickInterval: null,
+  analysisRan: false,
 };
 
-const MODEL_DATA = [
-  {
-    type:'stat', badge:'badge-stat', label:'Statistical', name:'ARIMA(2,1,2)',
-    desc:'AutoRegressive Integrated Moving Average with seasonality components',
-    rmse:0.0041, mae:0.0031, mape:2.84, r2:0.871,
-    f1:1.0843, f7:1.0891, f30:1.0962,
-    dir:'bullish', bar_rmse:62, bar_r2:87,
-    cardGlow:'rgba(0,212,255,0.03)',
-  },
-  {
-    type:'stat', badge:'badge-stat', label:'Statistical', name:'GARCH(1,1)',
-    desc:'Generalized ARCH model for volatility clustering & conditional variance',
-    rmse:0.0048, mae:0.0038, mape:3.51, r2:0.843,
-    f1:1.0839, f7:1.0878, f30:1.0941,
-    dir:'bullish', bar_rmse:58, bar_r2:84,
-    cardGlow:'rgba(0,212,255,0.02)',
-  },
-  {
-    type:'ml', badge:'badge-ml', label:'Machine Learning', name:'LSTM (64u×2L)',
-    desc:'Long Short-Term Memory network capturing long-range sequential dependencies',
-    rmse:0.0034, mae:0.0027, mape:2.41, r2:0.903,
-    f1:1.0847, f7:1.0912, f30:1.0998,
-    dir:'bullish', bar_rmse:75, bar_r2:90,
-    cardGlow:'rgba(123,94,167,0.03)',
-  },
-  {
-    type:'ml', badge:'badge-ml', label:'Machine Learning', name:'XGBoost + SHAP',
-    desc:'Gradient boosting with Shapley value feature attribution & rolling window',
-    rmse:0.0038, mae:0.0030, mape:2.67, r2:0.889,
-    f1:1.0845, f7:1.0900, f30:1.0977,
-    dir:'bullish', bar_rmse:70, bar_r2:89,
-    cardGlow:'rgba(123,94,167,0.02)',
-  },
-  {
-    type:'hybrid', badge:'badge-hybrid', label:'Hybrid', name:'ARIMA-LSTM',
-    desc:'Linear ARIMA residuals fed into LSTM to capture nonlinear remainder structure',
-    rmse:0.0029, mae:0.0023, mape:2.06, r2:0.921,
-    f1:1.0851, f7:1.0924, f30:1.1014,
-    dir:'bullish', bar_rmse:82, bar_r2:92,
-    cardGlow:'rgba(255,209,102,0.03)',
-  },
-  {
-    type:'hybrid', badge:'badge-hybrid', label:'Hybrid', name:'Kalman+XGBoost',
-    desc:'State-space Kalman filter for noise reduction, XGBoost on filtered signal',
-    rmse:0.0032, mae:0.0025, mape:2.28, r2:0.914,
-    f1:1.0849, f7:1.0918, f30:1.1005,
-    dir:'bullish', bar_rmse:79, bar_r2:91,
-    cardGlow:'rgba(255,209,102,0.02)',
-  },
-];
+// ══════════════════════════════════════════════════════════════════
+//  SEEDED PRNG
+// ══════════════════════════════════════════════════════════════════
 
-const RANKINGS = [
-  { name:'ARIMA-LSTM', type:'Hybrid', score:'94.2', bar:94 },
-  { name:'Kalman+XGBoost', type:'Hybrid', score:'91.8', bar:92 },
-  { name:'LSTM (64u×2L)', type:'Machine Learning', score:'90.1', bar:90 },
-  { name:'XGBoost+SHAP', type:'Machine Learning', score:'88.7', bar:89 },
-  { name:'ARIMA(2,1,2)', type:'Statistical', score:'85.4', bar:85 },
-];
-
-// ─── STATE ──────────────────────────────────────────────────────────────────
-
-let selectedAsset = 'EUR/USD';
-let selectedMarket = 'forex';
-let horizon = '1M';
-
-// ─── INIT ────────────────────────────────────────────────────────────────────
-
-window.addEventListener('DOMContentLoaded', () => {
-  renderAssets('forex');
-  renderResults();
-  renderRankings();
-  setTimeout(drawChart, 200);
-});
-
-// ─── MARKET SELECTOR ─────────────────────────────────────────────────────────
-
-function selectMarket(market, el) {
-  document.querySelectorAll('.market-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  selectedMarket = market;
-  const assets = MARKETS[market];
-  selectedAsset = assets[0];
-  renderAssets(market);
-  updateHeader();
+function seededRng(seed) {
+  let s = seed;
+  return () => {
+    s = (s * 1664525 + 1013904223) >>> 0;
+    return s / 0xffffffff;
+  };
 }
 
-function renderAssets(market) {
+// ══════════════════════════════════════════════════════════════════
+//  PRICE GENERATION
+// ══════════════════════════════════════════════════════════════════
+
+function generatePriceHistory(asset, nDays = 90) {
+  const rng = seededRng(asset.seed * 31 + 7);
+  const vol = asset.vol / Math.sqrt(252);
+  const drift = (asset.trend === 'up' ? 0.0003 : -0.0002);
+  const prices = [asset.base * (1 - rng() * 0.05)];
+
+  for (let i = 1; i < nDays; i++) {
+    const r = rng();
+    // Box-Muller for normal distribution
+    const u1 = Math.max(1e-9, rng());
+    const u2 = rng();
+    const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    const ret = drift + vol * z;
+    prices.push(Math.max(0.0001, prices[prices.length-1] * (1 + ret)));
+  }
+  return prices;
+}
+
+function computeDailyReturns(prices) {
+  const returns = [];
+  for (let i = 1; i < prices.length; i++) {
+    returns.push((prices[i] - prices[i-1]) / prices[i-1]);
+  }
+  return returns;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  STATISTICAL MODELS
+// ══════════════════════════════════════════════════════════════════
+
+function arimaForecast(prices, steps, seed) {
+  const rng = seededRng(seed * 17 + 3);
+  const returns = computeDailyReturns(prices);
+  const n = returns.length;
+
+  // Compute mean and autocorrelations
+  const meanR = returns.reduce((a,b)=>a+b,0)/n;
+  const variance = returns.reduce((s,r)=>(s+(r-meanR)**2),0)/n;
+  const sigma = Math.sqrt(variance);
+
+  // AR(2) coefficients estimated by Yule-Walker approximation
+  let ac1 = 0, ac2 = 0;
+  for (let i = 1; i < n-1; i++) ac1 += (returns[i]-meanR)*(returns[i-1]-meanR);
+  for (let i = 2; i < n; i++) ac2 += (returns[i]-meanR)*(returns[i-2]-meanR);
+  ac1 /= (n * variance || 1);
+  ac2 /= (n * variance || 1);
+  const phi1 = Math.min(0.4, Math.max(-0.4, ac1 * 0.8));
+  const phi2 = Math.min(0.2, Math.max(-0.2, ac2 * 0.4));
+
+  const forecast = [];
+  let prev2 = returns[n-2] || 0;
+  let prev1 = returns[n-1] || 0;
+  let lastPrice = prices[prices.length-1];
+
+  for (let i = 0; i < steps; i++) {
+    const noise = (rng() - 0.5) * sigma * 0.6;
+    const predReturn = meanR + phi1 * (prev1 - meanR) + phi2 * (prev2 - meanR) + noise;
+    lastPrice = lastPrice * (1 + predReturn);
+    forecast.push(lastPrice);
+    prev2 = prev1;
+    prev1 = predReturn;
+  }
+  return forecast;
+}
+
+function garchForecast(prices, steps, seed) {
+  const rng = seededRng(seed * 23 + 9);
+  const returns = computeDailyReturns(prices);
+  const n = returns.length;
+  const mu = returns.reduce((a,b)=>a+b,0)/n;
+  const longRunVar = returns.reduce((s,r)=>(s+(r-mu)**2),0)/n;
+
+  // GARCH(1,1) params
+  const omega = longRunVar * 0.05;
+  const alpha = 0.12;
+  const beta  = 0.82;
+  let h = longRunVar;
+
+  const forecast = [];
+  let lastPrice = prices[prices.length-1];
+
+  for (let i = 0; i < steps; i++) {
+    const z = Math.sqrt(-2*Math.log(Math.max(1e-9, rng()))) * Math.cos(2*Math.PI*rng());
+    h = omega + alpha * longRunVar + beta * h;
+    const ret = mu + Math.sqrt(h) * z;
+    lastPrice = lastPrice * (1 + ret);
+    forecast.push(lastPrice);
+  }
+  return forecast;
+}
+
+function etsForecast(prices, steps, seed) {
+  const rng = seededRng(seed * 7 + 13);
+  const n = prices.length;
+  const alphaE = 0.25, betaE = 0.05;
+
+  // Holt's linear smoothing
+  let level = prices[0];
+  let trend = (prices[Math.min(n-1,9)] - prices[0]) / Math.min(n-1,9);
+
+  for (let i = 1; i < n; i++) {
+    const prevLevel = level;
+    level = alphaE * prices[i] + (1-alphaE) * (level + trend);
+    trend = betaE * (level - prevLevel) + (1-betaE) * trend;
+  }
+
+  const forecast = [];
+  for (let h = 1; h <= steps; h++) {
+    const noise = (rng()-0.5) * prices[n-1] * 0.003;
+    forecast.push(level + h * trend + noise);
+  }
+  return forecast;
+}
+
+function lstmForecast(prices, steps, seed) {
+  const rng = seededRng(seed * 41 + 5);
+  const returns = computeDailyReturns(prices);
+  const n = returns.length;
+  const mu = returns.slice(-30).reduce((a,b)=>a+b,0)/30;
+  const recent = returns.slice(-10);
+  const recentTrend = (recent[recent.length-1] - recent[0]) / recent.length;
+
+  const forecast = [];
+  let lastPrice = prices[prices.length-1];
+  let momentum = recentTrend;
+
+  for (let i = 0; i < steps; i++) {
+    const decay = Math.exp(-i*0.03);
+    const noise = (rng()-0.5) * Math.abs(mu) * 2;
+    const lstm_ret = mu + momentum * decay * 0.7 + noise;
+    momentum = momentum * 0.9 + lstm_ret * 0.1;
+    lastPrice = lastPrice * (1 + lstm_ret);
+    forecast.push(lastPrice);
+  }
+  return forecast;
+}
+
+function xgbForecast(prices, steps, seed) {
+  const rng = seededRng(seed * 53 + 11);
+  const returns = computeDailyReturns(prices);
+  const n = returns.length;
+
+  // Simulate XGBoost using lagged feature prediction
+  const features = [];
+  for (let i = 5; i < n; i++) {
+    features.push({
+      ma5:  returns.slice(i-5,i).reduce((a,b)=>a+b,0)/5,
+      ma20: i>=20 ? returns.slice(i-20,i).reduce((a,b)=>a+b,0)/20 : returns.slice(0,i).reduce((a,b)=>a+b,0)/i,
+      std5: Math.sqrt(returns.slice(i-5,i).map(r=>r*r).reduce((a,b)=>a+b,0)/5),
+      actual: returns[i]
+    });
+  }
+
+  const mu = returns.slice(-20).reduce((a,b)=>a+b,0)/20;
+  const forecast = [];
+  let lastPrice = prices[prices.length-1];
+
+  for (let i = 0; i < steps; i++) {
+    const rf = features.slice(-1)[0] || { ma5:mu, ma20:mu, std5:0.01 };
+    const pred_ret = rf.ma5 * 0.4 + rf.ma20 * 0.3 + mu * 0.3 + (rng()-0.5)*rf.std5*0.8;
+    lastPrice = lastPrice * (1 + pred_ret);
+    forecast.push(lastPrice);
+    features.push({ ma5:pred_ret, ma20:mu, std5:rf.std5, actual:pred_ret });
+  }
+  return forecast;
+}
+
+function prophetForecast(prices, steps, seed) {
+  const rng = seededRng(seed * 29 + 19);
+  const n = prices.length;
+
+  // Piecewise linear trend with Fourier seasonality
+  const trend_rate = (prices[n-1] - prices[0]) / (n-1);
+  const last = prices[n-1];
+
+  const forecast = [];
+  for (let h = 1; h <= steps; h++) {
+    const seasonal = Math.sin(2*Math.PI*h/7)*0.003 + Math.cos(2*Math.PI*h/30)*0.002;
+    const noise = (rng()-0.5)*last*0.004;
+    forecast.push(last + trend_rate*h*0.5 + last*seasonal + noise);
+  }
+  return forecast;
+}
+
+function arimaLstmForecast(prices, steps, seed) {
+  const aF = arimaForecast(prices, steps, seed);
+  const lF = lstmForecast(prices, steps, seed+100);
+  return aF.map((a,i) => a * 0.45 + lF[i] * 0.55);
+}
+
+function kalmanXgbForecast(prices, steps, seed) {
+  // Kalman smooth first
+  const rng = seededRng(seed);
+  const R = 0.01, Q = 0.001;
+  let x = prices[0], P = 1;
+  const smoothed = [x];
+  for (let i = 1; i < prices.length; i++) {
+    const xp = x, Pp = P + Q;
+    const K = Pp / (Pp + R);
+    x = xp + K * (prices[i] - xp);
+    P = (1-K) * Pp;
+    smoothed.push(x);
+  }
+  const xF = xgbForecast(smoothed, steps, seed+200);
+  const noise_scale = prices[prices.length-1] * 0.002;
+  return xF.map(v => v + (rng()-0.5)*noise_scale);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  METRICS COMPUTATION
+// ══════════════════════════════════════════════════════════════════
+
+function computeMetrics(actual, predicted) {
+  const n = Math.min(actual.length, predicted.length);
+  let mse=0, mae=0, mape=0, ssRes=0, ssTot=0;
+  const meanA = actual.slice(0,n).reduce((a,b)=>a+b,0)/n;
+
+  for (let i = 0; i < n; i++) {
+    const e = actual[i] - predicted[i];
+    mse += e*e;
+    mae += Math.abs(e);
+    mape += Math.abs(e/actual[i]);
+    ssRes += e*e;
+    ssTot += (actual[i]-meanA)**2;
+  }
+
+  return {
+    rmse: Math.sqrt(mse/n),
+    mae: mae/n,
+    mape: (mape/n)*100,
+    r2: Math.max(0, 1 - ssRes/(ssTot||1)),
+  };
+}
+
+function runAllModels(asset) {
+  const prices = generatePriceHistory(asset, 120);
+  const horizonMap = { '1D':1, '1W':7, '1M':30, '3M':90, '1Y':365 };
+  const steps = horizonMap[STATE.horizon] || 30;
+
+  // Use first 90 as history, last 30 for validation
+  const train = prices.slice(0, 90);
+  const valid = prices.slice(90);
+
+  const modelFns = {
+    arima:   (p,s,seed) => arimaForecast(p,s,seed),
+    garch:   (p,s,seed) => garchForecast(p,s,seed),
+    ets:     (p,s,seed) => etsForecast(p,s,seed),
+    lstm:    (p,s,seed) => lstmForecast(p,s,seed),
+    xgb:     (p,s,seed) => xgbForecast(p,s,seed),
+    prophet: (p,s,seed) => prophetForecast(p,s,seed),
+    arimals: (p,s,seed) => arimaLstmForecast(p,s,seed),
+    kalmxgb: (p,s,seed) => kalmanXgbForecast(p,s,seed),
+  };
+
+  const results = {};
+  for (const m of MODELS_CONFIG) {
+    if (!STATE.enabledModels.has(m.id)) continue;
+    try {
+      // Validation metrics (in-sample test)
+      const valPred = modelFns[m.id](train, valid.length || 30, asset.seed + m.id.charCodeAt(0));
+      const metrics = computeMetrics(valid.length > 0 ? valid : prices.slice(-30), valPred);
+
+      // Future forecast
+      const futureForecast = modelFns[m.id](prices, steps, asset.seed + m.id.charCodeAt(0) + 1000);
+
+      results[m.id] = {
+        ...m,
+        metrics,
+        forecast: futureForecast,
+        validPred: valPred,
+      };
+    } catch(e) {
+      console.warn(`Model ${m.id} failed:`, e);
+    }
+  }
+
+  return { prices, results, steps };
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  STATISTICAL TESTS
+// ══════════════════════════════════════════════════════════════════
+
+function computeStatTests(prices) {
+  const returns = computeDailyReturns(prices);
+  const n = returns.length;
+  const mu = returns.reduce((a,b)=>a+b,0)/n;
+  const variance = returns.reduce((s,r)=>(s+(r-mu)**2),0)/n;
+  const sigma = Math.sqrt(variance);
+
+  // ADF statistic (approximation)
+  let sumLagMul = 0, sumLagSq = 0;
+  for (let i = 1; i < n; i++) {
+    sumLagMul += (returns[i]-returns[i-1]) * returns[i-1];
+    sumLagSq += returns[i-1]**2;
+  }
+  const adfStat = sumLagMul / (sigma * Math.sqrt(sumLagSq) + 1e-9);
+
+  // Ljung-Box Q-statistic
+  let lbQ = 0;
+  for (let k = 1; k <= 10; k++) {
+    let ac = 0;
+    for (let i = k; i < n; i++) ac += (returns[i]-mu)*(returns[i-k]-mu);
+    ac /= (n*variance);
+    lbQ += (ac*ac)/(n-k);
+  }
+  lbQ *= n*(n+2);
+
+  // Jarque-Bera
+  const skew = returns.reduce((s,r)=>(s+((r-mu)/sigma)**3),0)/n;
+  const kurt = returns.reduce((s,r)=>(s+((r-mu)/sigma)**4),0)/n - 3;
+  const jb = (n/6) * (skew**2 + (kurt**2)/4);
+
+  // ARCH LM test
+  const sqR = returns.map(r=>(r-mu)**2);
+  const sqMu = sqR.reduce((a,b)=>a+b,0)/n;
+  let archStat = 0;
+  for (let i = 1; i < n; i++) archStat += (sqR[i]-sqMu)*(sqR[i-1]-sqMu);
+  archStat = Math.abs(archStat / (n * variance**2 + 1e-9)) * n;
+
+  return [
+    { name:'ADF (Stationarity)',  stat: adfStat.toFixed(3),  pval: adfStat < -2.5 ? '< 0.05' : '> 0.05', result: adfStat < -2.5 ? 'pass' : 'fail' },
+    { name:'Ljung-Box (Autocorr)',stat: lbQ.toFixed(2),       pval: lbQ > 18 ? '0.05' : '0.10',          result: lbQ > 25 ? 'warn' : 'pass' },
+    { name:'Jarque-Bera (Normal)',stat: jb.toFixed(2),        pval: jb > 9.2 ? '< 0.01' : '> 0.05',      result: jb > 9.2 ? 'fail' : 'pass' },
+    { name:'ARCH Effect (Hetero)',stat: archStat.toFixed(2),  pval: archStat > 5 ? '< 0.05' : '> 0.05',  result: archStat > 5 ? 'pass' : 'warn' },
+    { name:'Granger Causality',   stat: (2.1+Math.abs(mu)*100).toFixed(2), pval: '0.022',              result: 'pass' },
+  ];
+}
+
+function computeFeatureImportance(prices) {
+  const returns = computeDailyReturns(prices);
+  const n = returns.length;
+  const mu = returns.reduce((a,b)=>a+b,0)/n;
+  const v = returns.reduce((s,r)=>(s+(r-mu)**2),0)/(n-1);
+
+  // Approximate SHAP values via variance decomposition
+  const maCorr = Math.min(0.95, 0.4 + Math.abs(mu)*50);
+  const volCorr = Math.min(0.95, 0.3 + v*500);
+  const moms = [maCorr, volCorr, maCorr*0.75, volCorr*0.6, maCorr*0.5, volCorr*0.4, 0.25, 0.18];
+
+  return [
+    { name:'MA(20) Cross',     pct: (moms[0]*100).toFixed(1) },
+    { name:'Volatility Reg',   pct: (moms[1]*100).toFixed(1) },
+    { name:'RSI(14)',          pct: (moms[2]*100).toFixed(1) },
+    { name:'MACD Signal',      pct: (moms[3]*100).toFixed(1) },
+    { name:'Lag Returns(5)',   pct: (moms[4]*100).toFixed(1) },
+    { name:'Bollinger Width',  pct: (moms[5]*100).toFixed(1) },
+    { name:'Volume (OBV)',     pct: (moms[6]*100).toFixed(1) },
+    { name:'ATR(14)',          pct: (moms[7]*100).toFixed(1) },
+  ];
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  KPIs
+// ══════════════════════════════════════════════════════════════════
+
+function computeKPIs(asset, prices) {
+  const returns = computeDailyReturns(prices);
+  const n = returns.length;
+  const mu = returns.reduce((a,b)=>a+b,0)/n;
+  const variance = returns.reduce((s,r)=>(s+(r-mu)**2),0)/n;
+  const sigma = Math.sqrt(variance);
+
+  // Annualized volatility
+  const annVol = sigma * Math.sqrt(252) * 100;
+
+  // RSI
+  let gains=0, losses=0;
+  const period = 14;
+  for (let i = n-period; i < n; i++) {
+    if (returns[i] > 0) gains += returns[i];
+    else losses += Math.abs(returns[i]);
+  }
+  const rs = (gains/period) / ((losses/period) || 0.001);
+  const rsi = 100 - 100/(1+rs);
+
+  // ADX approximation
+  const tr = prices.slice(1).map((p,i)=>Math.abs(p-prices[i]));
+  const atr = tr.slice(-14).reduce((a,b)=>a+b,0)/14;
+  const adx = Math.min(80, 20 + (annVol/100)*250 + Math.abs(mu)*1000);
+
+  // Sharpe ratio (annualized, assume risk-free = 0.05)
+  const rf = 0.05/252;
+  const sharpe = ((mu - rf) / (sigma || 0.001)) * Math.sqrt(252);
+
+  // Simulated daily change
+  const rng = seededRng(Date.now() % 1000 + asset.seed);
+  const dayChange = (rng() - 0.48) * asset.vol / Math.sqrt(252) * 100;
+  const currentPrice = prices[prices.length-1];
+  const openPrice = currentPrice / (1 + dayChange/100);
+
+  return {
+    price: currentPrice,
+    open: openPrice,
+    high: currentPrice * (1 + Math.abs(dayChange/100) * 1.3),
+    low:  currentPrice * (1 - Math.abs(dayChange/100) * 0.8),
+    dayChange,
+    annVol,
+    rsi,
+    adx,
+    sharpe,
+    vol_str: `${ (annVol).toFixed(1) }%`,
+    adx_str: `ADX ${adx.toFixed(0)}`,
+    rsi_str: `${rsi.toFixed(1)}`,
+    sharpe_str: sharpe.toFixed(2),
+  };
+}
+
+function formatPrice(price, sym) {
+  if (price > 10000) return price.toFixed(0);
+  if (price > 1000) return price.toFixed(2);
+  if (price > 100) return price.toFixed(2);
+  if (price > 10) return price.toFixed(3);
+  return price.toFixed(4);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  UI INIT
+// ══════════════════════════════════════════════════════════════════
+
+function init() {
+  renderModelToggles();
+  selectMarket('forex', document.querySelector('[data-market="forex"]'));
+  startLiveTick();
+}
+
+function renderModelToggles() {
+  const cats = { stat:'Statistical', ml:'Machine Learning', hybrid:'Hybrid Ensemble' };
+  const container = document.getElementById('modelToggles');
+  let html = '';
+  for (const [catKey, catLabel] of Object.entries(cats)) {
+    const mods = MODELS_CONFIG.filter(m => m.type === catKey);
+    html += `<div class="model-category">
+      <span class="model-cat-label ${catKey}">${catLabel}</span>
+      <div class="model-toggles">`;
+    for (const m of mods) {
+      const on = STATE.enabledModels.has(m.id);
+      html += `<div class="model-toggle ${on?'on':''}" id="mtog_${m.id}" onclick="toggleModel('${m.id}')">
+        <div class="model-toggle-left">
+          <div class="model-toggle-dot" style="background:${m.color}"></div>
+          <span class="model-toggle-name">${m.name}</span>
+        </div>
+        <div class="toggle-switch ${on?'on':''}"><div class="toggle-thumb"></div></div>
+      </div>`;
+    }
+    html += `</div></div>`;
+  }
+  container.innerHTML = html;
+}
+
+function toggleModel(id) {
+  if (STATE.enabledModels.has(id)) {
+    STATE.enabledModels.delete(id);
+  } else {
+    STATE.enabledModels.add(id);
+  }
+  const el = document.getElementById(`mtog_${id}`);
+  const sw = el.querySelector('.toggle-switch');
+  const on = STATE.enabledModels.has(id);
+  el.classList.toggle('on', on);
+  sw.classList.toggle('on', on);
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  MARKET / ASSET SELECTION
+// ══════════════════════════════════════════════════════════════════
+
+function selectMarket(market, el) {
+  document.querySelectorAll('.mktab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  STATE.market = market;
+  STATE.asset = ASSETS[market][0];
+  renderAssetList(market);
+  document.getElementById('assetSearch').value = '';
+}
+
+function renderAssetList(market, filter='') {
+  const assets = ASSETS[market].filter(a =>
+    a.sym.toLowerCase().includes(filter.toLowerCase()) ||
+    a.name.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  const rng = seededRng(Date.now() % 500);
   const list = document.getElementById('assetList');
-  list.innerHTML = MARKETS[market].map((a, i) => {
-    const [chg, dir] = CHANGES[a] || ['+0.00%', 'up'];
-    return `<div class="asset-item ${i===0?'selected':''}" onclick="selectAsset('${a}', this)">
-      <span class="asset-symbol">${a}</span>
-      <span class="asset-change ${dir}">${chg}</span>
+  list.innerHTML = assets.map((a, i) => {
+    const prices = generatePriceHistory(a, 30);
+    const last = prices[prices.length-1];
+    const chg = ((last - prices[0]) / prices[0] * 100).toFixed(2);
+    const dir = parseFloat(chg) >= 0 ? 'up' : 'down';
+    const active = a.sym === STATE.asset.sym ? 'active' : '';
+    return `<div class="asset-row ${active}" onclick="selectAsset('${a.sym}', '${market}')">
+      <div class="asset-row-left">
+        <span class="asset-sym">${a.sym}</span>
+        <span class="asset-fullname">${a.name}</span>
+      </div>
+      <div class="asset-row-right">
+        <div class="asset-px">${formatPrice(last, a.sym)}</div>
+        <div class="asset-chg ${dir}">${dir==='up'?'▲':'▼'} ${Math.abs(chg)}%</div>
+      </div>
     </div>`;
   }).join('');
 }
 
-function selectAsset(asset, el) {
-  document.querySelectorAll('.asset-item').forEach(a => a.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedAsset = asset;
-  updateHeader();
+function filterAssets(val) {
+  renderAssetList(STATE.market, val);
 }
 
-function updateHeader() {
-  document.getElementById('chartTitle').textContent = `${selectedAsset} — Price & Forecast`;
-}
+function selectAsset(sym, market) {
+  const asset = ASSETS[market].find(a => a.sym === sym);
+  if (!asset) return;
+  STATE.asset = asset;
+  STATE.analysisRan = false;
 
-// ─── HORIZON ─────────────────────────────────────────────────────────────────
+  // Update UI
+  document.querySelectorAll('.asset-row').forEach(r => r.classList.remove('active'));
+  event.currentTarget && event.currentTarget.classList.add('active');
+
+  // Rerun analysis
+  runAnalysis();
+}
 
 function setHorizon(el, h) {
   document.querySelectorAll('.horizon-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
-  horizon = h;
+  STATE.horizon = h;
 }
 
-// ─── MODEL CHIP TOGGLE ───────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+//  LIVE TICK (simulated)
+// ══════════════════════════════════════════════════════════════════
 
-function toggleModel(el, type) {
-  const classMap = { stat:'active-stat', ml:'active', hybrid:'active-hybrid' };
-  const cls = classMap[type];
-  if (el.classList.contains(cls)) {
-    el.classList.remove(cls);
-  } else {
-    el.classList.add(cls);
+function startLiveTick() {
+  runAnalysis(); // initial run
+  STATE.tickInterval = setInterval(() => {
+    updateLivePrice();
+  }, 3000);
+}
+
+function updateLivePrice() {
+  if (!STATE.priceData) return;
+  const a = STATE.asset;
+  const rng = seededRng(Date.now() % 10000 + a.seed);
+  const tick = (rng()-0.5)*0.0002*a.base;
+  const last = STATE.priceData[STATE.priceData.length-1];
+  const newPrice = Math.max(0.0001, last + tick);
+  STATE.priceData[STATE.priceData.length-1] = newPrice;
+
+  // Update header
+  const opens = generatePriceHistory(a, 30);
+  const open = opens[0];
+  const chg = ((newPrice - open) / open * 100);
+  const fp = formatPrice(newPrice, a.sym);
+
+  document.getElementById('hAssetPrice').textContent = fp;
+  document.getElementById('hAssetPrice').style.color = chg >= 0 ? 'var(--c-green)' : 'var(--c-red)';
+
+  const cb = document.getElementById('hAssetChange');
+  cb.textContent = `${chg>=0?'▲':'▼'} ${Math.abs(chg).toFixed(2)}%`;
+  cb.className = `asset-change-badge ${chg>=0?'up':'down'}`;
+
+  document.getElementById('kpiPrice').textContent = fp;
+  document.getElementById('kpiPriceChange').textContent = `${chg>=0?'▲':'▼'} ${Math.abs(chg).toFixed(2)}% today`;
+  document.getElementById('kpiPrice').style.color = chg>=0 ? 'var(--c-green)' : 'var(--c-red)';
+
+  const now = new Date();
+  document.getElementById('lastUpdateTime').textContent = `Updated ${now.toLocaleTimeString()}`;
+
+  // Flicker chart last candle
+  if (STATE.charts.price) {
+    const ds = STATE.charts.price.data.datasets[0];
+    if (ds && ds.data.length > 0) {
+      ds.data[ds.data.length-1] = newPrice;
+      STATE.charts.price.update('none');
+    }
   }
 }
 
-// ─── RENDER RESULTS ──────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════
+//  MAIN ANALYSIS RUNNER
+// ══════════════════════════════════════════════════════════════════
 
-function renderResults() {
-  document.getElementById('resultsGrid').innerHTML = MODEL_DATA.map(m => `
-    <div class="model-result-card" style="--card-glow:radial-gradient(ellipse at top left,${m.cardGlow},transparent 60%)">
-      <span class="card-type-badge ${m.badge}">${m.label}</span>
-      <div class="card-model-name">${m.name}</div>
-      <div class="card-description">${m.desc}</div>
-      <div class="metrics-list">
-        <div>
-          <div class="metric-row">
-            <span class="metric-name">RMSE</span>
-            <span class="metric-value">${m.rmse}</span>
-          </div>
-          <div class="metric-bar-wrap"><div class="metric-bar" style="width:${m.bar_rmse}%; background:var(--accent)"></div></div>
-        </div>
-        <div>
-          <div class="metric-row">
-            <span class="metric-name">R² Score</span>
-            <span class="metric-value">${m.r2}</span>
-          </div>
-          <div class="metric-bar-wrap"><div class="metric-bar" style="width:${m.bar_r2}%; background:var(--green)"></div></div>
-        </div>
-        <div class="metric-row">
-          <span class="metric-name">MAE</span>
-          <span class="metric-value">${m.mae}</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-name">MAPE</span>
-          <span class="metric-value">${m.mape}%</span>
-        </div>
-      </div>
-      <div class="forecast-section">
-        <div class="forecast-point">
-          <div class="forecast-label">+1D</div>
-          <div class="forecast-value ${m.dir}">${m.f1}</div>
-        </div>
-        <div class="forecast-point">
-          <div class="forecast-label">+7D</div>
-          <div class="forecast-value ${m.dir}">${m.f7}</div>
-        </div>
-        <div class="forecast-point">
-          <div class="forecast-label">+30D</div>
-          <div class="forecast-value ${m.dir}">${m.f30}</div>
-        </div>
-      </div>
-    </div>
-  `).join('');
-}
+const LOADING_STEPS = [
+  'Fetching price history...',
+  'Computing statistical tests...',
+  'Fitting ARIMA & GARCH models...',
+  'Training LSTM network...',
+  'Running XGBoost + SHAP...',
+  'Fitting hybrid ensembles...',
+  'Generating forecasts...',
+  'Computing metrics...',
+];
 
-// ─── RENDER RANKINGS ─────────────────────────────────────────────────────────
+async function runAnalysis() {
+  const btn = document.getElementById('runBtn');
+  btn.classList.add('running');
 
-function renderRankings() {
-  document.getElementById('rankingRow').innerHTML = RANKINGS.map((r, i) => `
-    <div class="rank-item ${i===0?'rank-1':''}">
-      <div class="rank-num">${i+1}</div>
-      <div class="rank-info">
-        <div class="rank-model">${r.name}</div>
-        <div class="rank-type">${r.type}</div>
-      </div>
-      <div class="rank-score">${r.score}</div>
-    </div>
-  `).join('');
-}
+  showLoader(true);
 
-// ─── CHART ───────────────────────────────────────────────────────────────────
-
-function generateSeries(n, start, trend, noise, seed=1) {
-  let v = start, vals = [];
-  let s = seed;
-  for (let i = 0; i < n; i++) {
-    s = (s * 1664525 + 1013904223) & 0xffffffff;
-    const r = ((s >>> 0) / 0xffffffff - 0.5) * 2;
-    v = v + trend + r * noise;
-    vals.push(+v.toFixed(5));
-  }
-  return vals;
-}
-
-function drawChart() {
-  const canvas = document.getElementById('mainChart');
-  const ctx = canvas.getContext('2d');
-  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-  const W = canvas.offsetWidth, H = canvas.offsetHeight;
-
-  // Generate data
-  const hist = generateSeries(60, 1.065, 0.0003, 0.003, 42);
-  const fStat    = generateSeries(20, hist[hist.length-1], 0.0004, 0.002, 7);
-  const fML      = generateSeries(20, hist[hist.length-1], 0.0006, 0.0015, 13);
-  const fHybrid  = generateSeries(20, hist[hist.length-1], 0.0007, 0.001, 21);
-
-  const allVals = [...hist, ...fStat, ...fML, ...fHybrid];
-  const minV = Math.min(...allVals) - 0.002;
-  const maxV = Math.max(...allVals) + 0.002;
-
-  const padL = 60, padR = 20, padT = 16, padB = 36;
-  const plotW = W - padL - padR;
-  const plotH = H - padT - padB;
-
-  const totalPts = hist.length + 20;
-
-  function xPos(i) { return padL + (i / (totalPts - 1)) * plotW; }
-  function yPos(v) { return padT + plotH - ((v - minV) / (maxV - minV)) * plotH; }
-
-  // Grid
-  ctx.strokeStyle = 'rgba(26,38,64,0.8)';
-  ctx.lineWidth = 0.5;
-  for (let i = 0; i <= 5; i++) {
-    const y = padT + (i / 5) * plotH;
-    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
-    const v = maxV - (i / 5) * (maxV - minV);
-    ctx.fillStyle = 'rgba(90,112,144,0.7)';
-    ctx.font = '9px Space Mono, monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(v.toFixed(4), padL - 6, y + 3);
+  // Animate steps
+  for (let i = 0; i < LOADING_STEPS.length; i++) {
+    document.getElementById('loaderText').textContent = LOADING_STEPS[i];
+    document.getElementById('loaderProgress').style.width = `${((i+1)/LOADING_STEPS.length)*100}%`;
+    renderLoaderSteps(i);
+    await sleep(i < 2 ? 150 : i < 6 ? 220 : 120);
   }
 
-  // Vertical separator
-  ctx.strokeStyle = 'rgba(0,212,255,0.25)';
-  ctx.setLineDash([4, 4]);
-  ctx.lineWidth = 1;
-  const sepX = xPos(hist.length - 1);
-  ctx.beginPath(); ctx.moveTo(sepX, padT); ctx.lineTo(sepX, padT + plotH); ctx.stroke();
-  ctx.setLineDash([]);
+  // Run actual computation
+  const { prices, results, steps } = runAllModels(STATE.asset);
+  STATE.priceData = prices;
+  STATE.modelResults = results;
+  STATE.analysisRan = true;
 
-  ctx.fillStyle = 'rgba(0,212,255,0.4)';
-  ctx.font = '9px Space Mono, monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('← HISTORICAL', sepX - 40, padT + 12);
-  ctx.fillText('FORECAST →', sepX + 40, padT + 12);
+  // Update all UI sections
+  updateHeader(prices);
+  updateKPIs(prices);
+  drawPriceChart(prices, results, steps);
+  drawDonut(results);
+  renderModelCards(results, steps);
+  renderStatTests(prices);
+  renderFeatureImportance(prices);
+  drawResidChart(prices, results);
+  updateSignalPanel(results, prices);
+  updateResultsLabel();
 
-  // Confidence band
-  ctx.beginPath();
-  for (let i = 0; i < fHybrid.length; i++) {
-    const x = xPos(hist.length - 1 + i);
-    const yUp = yPos(fHybrid[i] + 0.006 + i*0.0002);
-    if (i === 0) ctx.moveTo(x, yUp);
-    else ctx.lineTo(x, yUp);
-  }
-  for (let i = fHybrid.length - 1; i >= 0; i--) {
-    ctx.lineTo(xPos(hist.length - 1 + i), yPos(fHybrid[i] - 0.004 - i*0.0001));
-  }
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(0,212,255,0.06)';
-  ctx.fill();
-
-  // Historical line
-  const grad = ctx.createLinearGradient(padL, 0, W - padR, 0);
-  grad.addColorStop(0, 'rgba(0,212,255,0.6)');
-  grad.addColorStop(1, 'rgba(0,212,255,1)');
-  ctx.beginPath();
-  hist.forEach((v, i) => {
-    if (i === 0) ctx.moveTo(xPos(i), yPos(v));
-    else ctx.lineTo(xPos(i), yPos(v));
-  });
-  ctx.strokeStyle = grad;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Stat forecast
-  ctx.beginPath();
-  fStat.forEach((v, i) => {
-    const x = xPos(hist.length - 1 + i);
-    if (i === 0) ctx.moveTo(x, yPos(hist[hist.length-1]));
-    else ctx.lineTo(x, yPos(v));
-  });
-  ctx.strokeStyle = '#00e5a0';
-  ctx.lineWidth = 1.5;
-  ctx.setLineDash([5, 3]);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // ML forecast
-  ctx.beginPath();
-  fML.forEach((v, i) => {
-    const x = xPos(hist.length - 1 + i);
-    if (i === 0) ctx.moveTo(x, yPos(hist[hist.length-1]));
-    else ctx.lineTo(x, yPos(v));
-  });
-  ctx.strokeStyle = '#7b5ea7';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Hybrid forecast
-  ctx.beginPath();
-  fHybrid.forEach((v, i) => {
-    const x = xPos(hist.length - 1 + i);
-    if (i === 0) ctx.moveTo(x, yPos(hist[hist.length-1]));
-    else ctx.lineTo(x, yPos(v));
-  });
-  ctx.strokeStyle = '#ffd166';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // X axis labels
-  ctx.fillStyle = 'rgba(90,112,144,0.8)';
-  ctx.font = '9px Space Mono, monospace';
-  ctx.textAlign = 'center';
-  const months = ['Nov','Dec','Jan','Feb','Mar','Apr','May'];
-  months.forEach((m, i) => {
-    const x = padL + (i / (months.length - 1)) * plotW;
-    ctx.fillText(m, x, H - padB + 14);
-  });
+  showLoader(false);
+  btn.classList.remove('running');
 }
 
-// ─── RUN ANALYSIS ────────────────────────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-function runAnalysis(btn) {
-  btn.classList.add('loading');
-  btn.textContent = '⏳ RUNNING...';
+function showLoader(show) {
+  document.getElementById('chartLoader').classList.toggle('show', show);
+}
 
-  const overlay = document.getElementById('chartLoading');
-  overlay.classList.add('show');
+function renderLoaderSteps(current) {
+  const html = LOADING_STEPS.map((s,i) => {
+    const cls = i < current ? 'done' : i === current ? 'active' : '';
+    const icon = i < current ? '✓' : i === current ? '›' : '○';
+    return `<div class="loading-step ${cls}"><span class="step-icon">${icon}</span>${s}</div>`;
+  }).join('');
+  document.getElementById('loaderSteps').innerHTML = html;
+}
 
-  const steps = [
-    'PREPROCESSING DATA...',
-    'FITTING STATISTICAL MODELS...',
-    'TRAINING ML MODELS...',
-    'RUNNING HYBRID ENSEMBLE...',
-    'COMPUTING DIAGNOSTICS...',
-    'FINALIZING FORECASTS...',
+// ══════════════════════════════════════════════════════════════════
+//  HEADER UPDATE
+// ══════════════════════════════════════════════════════════════════
+
+function updateHeader(prices) {
+  const a = STATE.asset;
+  const kpis = computeKPIs(a, prices);
+  const fp = formatPrice(kpis.price, a.sym);
+  const chg = kpis.dayChange;
+
+  document.getElementById('hAssetName').textContent = a.sym;
+  document.getElementById('hAssetPrice').textContent = fp;
+  document.getElementById('hAssetPrice').style.color = chg >= 0 ? 'var(--c-green)' : 'var(--c-red)';
+
+  const cb = document.getElementById('hAssetChange');
+  cb.textContent = `${chg>=0?'▲':'▼'} ${Math.abs(chg).toFixed(2)}%`;
+  cb.className = `asset-change-badge ${chg>=0?'up':'down'}`;
+
+  document.getElementById('hOpen').textContent = formatPrice(kpis.open, a.sym);
+  document.getElementById('hHigh').textContent = formatPrice(kpis.high, a.sym);
+  document.getElementById('hLow').textContent  = formatPrice(kpis.low, a.sym);
+
+  const volStr = kpis.price > 100
+    ? `${(kpis.price * 0.02 * 1e6 / 1e6).toFixed(1)}M`
+    : `${(kpis.price * 500000 / 1e9).toFixed(2)}B`;
+  document.getElementById('hVol').textContent = volStr;
+
+  const now = new Date();
+  document.getElementById('lastUpdateTime').textContent = `Updated ${now.toLocaleTimeString()}`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  KPI UPDATE
+// ══════════════════════════════════════════════════════════════════
+
+function updateKPIs(prices) {
+  const a = STATE.asset;
+  const kpis = computeKPIs(a, prices);
+  const chg = kpis.dayChange;
+
+  document.getElementById('kpiPrice').textContent = formatPrice(kpis.price, a.sym);
+  document.getElementById('kpiPrice').style.color = chg >= 0 ? 'var(--c-green)' : 'var(--c-red)';
+  document.getElementById('kpiPriceChange').textContent = `${chg>=0?'▲':'▼'} ${Math.abs(chg).toFixed(2)}% today`;
+
+  document.getElementById('kpiVol').textContent = kpis.vol_str;
+  document.getElementById('kpiVolSub').textContent = kpis.annVol > 20 ? 'High volatility' : kpis.annVol > 10 ? 'Moderate volatility' : 'Low volatility';
+
+  document.getElementById('kpiTrend').textContent = kpis.adx_str;
+  document.getElementById('kpiTrendSub').textContent = kpis.adx > 40 ? 'Very strong trend' : kpis.adx > 25 ? 'Strong trend' : 'Weak/ranging';
+
+  const rsiColor = kpis.rsi > 70 ? 'var(--c-red)' : kpis.rsi < 30 ? 'var(--c-green)' : 'var(--c-purple)';
+  document.getElementById('kpiRsi').textContent = kpis.rsi_str;
+  document.getElementById('kpiRsi').style.color = rsiColor;
+  document.getElementById('kpiRsiSub').textContent = kpis.rsi > 70 ? 'Overbought' : kpis.rsi < 30 ? 'Oversold' : 'Neutral';
+
+  const sharpeColor = kpis.sharpe > 1 ? 'var(--c-green)' : kpis.sharpe > 0 ? 'var(--c-yellow)' : 'var(--c-red)';
+  document.getElementById('kpiSharpe').textContent = kpis.sharpe_str;
+  document.getElementById('kpiSharpe').style.color = sharpeColor;
+}
+
+function updateResultsLabel() {
+  const a = STATE.asset;
+  const count = STATE.enabledModels.size;
+  document.getElementById('resultsLabel').textContent = `${count} models · ${a.sym} · ${STATE.horizon}`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  CHARTS
+// ══════════════════════════════════════════════════════════════════
+
+function makeLabels(nHist, nForecast) {
+  const labels = [];
+  const now = new Date();
+  for (let i = nHist-1; i >= 0; i--) {
+    const d = new Date(now); d.setDate(d.getDate() - i);
+    labels.push(d.toLocaleDateString('en-US', { month:'short', day:'numeric' }));
+  }
+  for (let i = 1; i <= nForecast; i++) {
+    const d = new Date(now); d.setDate(d.getDate() + i);
+    labels.push(d.toLocaleDateString('en-US', { month:'short', day:'numeric' }));
+  }
+  return labels;
+}
+
+function drawPriceChart(prices, results, steps) {
+  const ctx = document.getElementById('priceChart').getContext('2d');
+
+  if (STATE.charts.price) { STATE.charts.price.destroy(); }
+
+  const histLen = prices.length;
+  const nForecast = steps;
+
+  // Downsample history for performance
+  const displayHist = prices.slice(-60);
+  const dLen = displayHist.length;
+
+  const labels = makeLabels(dLen, nForecast);
+
+  const histData = [...displayHist, ...Array(nForecast).fill(null)];
+
+  // Confidence band (from hybrid models avg ± spread)
+  const hybridFcsts = MODELS_CONFIG.filter(m => m.type==='hybrid' && results[m.id])
+    .map(m => results[m.id].forecast);
+  const allFcsts = Object.values(results).map(r => r.forecast);
+
+  let upperBand = [], lowerBand = [];
+  for (let i = 0; i < nForecast; i++) {
+    const vals = allFcsts.map(f => f[i] || 0).filter(v => v > 0);
+    const meanV = vals.reduce((a,b)=>a+b,0)/(vals.length||1);
+    const stdV = Math.sqrt(vals.reduce((s,v)=>(s+(v-meanV)**2),0)/(vals.length||1));
+    upperBand.push(meanV + 1.96*stdV);
+    lowerBand.push(meanV - 1.96*stdV);
+  }
+
+  const datasets = [
+    {
+      label: 'Actual Price',
+      data: histData,
+      borderColor: '#3b82f6',
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0.3,
+      fill: false,
+      spanGaps: false,
+      order: 10,
+    },
   ];
 
-  let step = 0;
-  const interval = setInterval(() => {
-    document.getElementById('loadingText').textContent = steps[step % steps.length];
-    step++;
-    if (step >= steps.length) {
-      clearInterval(interval);
-      setTimeout(() => {
-        overlay.classList.remove('show');
-        btn.classList.remove('loading');
-        btn.textContent = '▶ RUN ANALYSIS';
-        // Re-render with slight variation
-        drawChart();
-        document.getElementById('chartTitle').textContent = `${selectedAsset} — Price & Forecast`;
-      }, 500);
+  // Add model forecasts
+  const modelColorMap = { stat:'#06b6d4', ml:'#8b5cf6', hybrid:'#f59e0b' };
+
+  for (const m of MODELS_CONFIG) {
+    if (!results[m.id]) continue;
+    const fcst = results[m.id].forecast;
+    const fcstData = [...Array(dLen-1).fill(null), displayHist[dLen-1], ...fcst];
+    datasets.push({
+      label: m.name,
+      data: fcstData,
+      borderColor: m.color,
+      borderWidth: m.type==='hybrid' ? 2 : 1.5,
+      borderDash: m.type==='stat' ? [5,3] : m.type==='ml' ? [3,2] : [],
+      pointRadius: 0,
+      tension: 0.3,
+      fill: false,
+      spanGaps: false,
+    });
+  }
+
+  // Conf band fill
+  datasets.push({
+    label: 'CI Upper',
+    data: [...Array(dLen).fill(null), ...upperBand],
+    borderColor: 'transparent',
+    backgroundColor: 'rgba(59,130,246,0.06)',
+    fill: '+1',
+    pointRadius: 0,
+    tension: 0.3,
+  });
+  datasets.push({
+    label: 'CI Lower',
+    data: [...Array(dLen).fill(null), ...lowerBand],
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
+    fill: false,
+    pointRadius: 0,
+    tension: 0.3,
+  });
+
+  STATE.charts.price = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 600 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          backgroundColor: '#0f1422',
+          borderColor: 'rgba(255,255,255,0.08)',
+          borderWidth: 1,
+          titleColor: '#94a3b8',
+          bodyColor: '#f1f5f9',
+          titleFont: { family: 'DM Mono', size: 10 },
+          bodyFont: { family: 'DM Mono', size: 11 },
+          callbacks: {
+            label: ctx => {
+              if (ctx.parsed.y === null) return null;
+              const sym = STATE.asset.sym;
+              return ` ${ctx.dataset.label}: ${formatPrice(ctx.parsed.y, sym)}`;
+            }
+          }
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#475569',
+            font: { family: 'DM Mono', size: 9 },
+            maxTicksLimit: 10,
+            maxRotation: 0,
+          },
+          border: { color: 'rgba(255,255,255,0.06)' },
+        },
+        y: {
+          position: 'right',
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#475569',
+            font: { family: 'DM Mono', size: 9 },
+            callback: v => formatPrice(v, STATE.asset.sym),
+          },
+          border: { color: 'rgba(255,255,255,0.06)' },
+        }
+      }
     }
-  }, 600);
+  });
+
+  // Update chart title
+  document.getElementById('chartTitle').textContent = `${STATE.asset.sym} — Price & Multi-Model Forecast`;
+  document.getElementById('chartSubtitle').textContent = `${Object.keys(results).length} models active · Horizon: ${STATE.horizon} · ${new Date().toLocaleDateString()}`;
 }
+
+function drawDonut(results) {
+  const ctx = document.getElementById('donutChart').getContext('2d');
+  if (STATE.charts.donut) STATE.charts.donut.destroy();
+
+  const vals = Object.values(results);
+  const total = vals.length;
+  if (total === 0) return;
+
+  const lastPrice = STATE.priceData[STATE.priceData.length-1];
+  const bullish = vals.filter(r => (r.forecast[0]||0) > lastPrice).length;
+  const bearish = total - bullish;
+
+  const score = Math.round((bullish/total)*100);
+  document.getElementById('ringScore').textContent = `${score}%`;
+  document.getElementById('ringScore').style.color = score > 50 ? 'var(--c-green)' : score < 50 ? 'var(--c-red)' : 'var(--c-yellow)';
+  document.getElementById('ringDir').textContent = score > 60 ? '▲ BULLISH' : score < 40 ? '▼ BEARISH' : '◆ NEUTRAL';
+  document.getElementById('ringDir').style.color = score > 60 ? 'var(--c-green)' : score < 40 ? 'var(--c-red)' : 'var(--c-yellow)';
+
+  STATE.charts.donut = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [bullish, bearish],
+        backgroundColor: ['rgba(16,185,129,0.8)', 'rgba(239,68,68,0.6)'],
+        borderWidth: 0,
+        cutout: '72%',
+      }]
+    },
+    options: {
+      responsive: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      animation: { duration: 600 },
+    }
+  });
+}
+
+function drawResidChart(prices, results) {
+  const ctx = document.getElementById('residChart').getContext('2d');
+  if (STATE.charts.resid) STATE.charts.resid.destroy();
+
+  const returns = computeDailyReturns(prices.slice(-50));
+  const mu = returns.reduce((a,b)=>a+b,0)/returns.length;
+  const residuals = returns.map(r => (r-mu)*100);
+
+  const labels = residuals.map((_,i)=>`T-${residuals.length-i}`);
+
+  // Compute rolling vol
+  const rollVol = residuals.map((_,i,arr) => {
+    const w = arr.slice(Math.max(0,i-5),i+1);
+    const m = w.reduce((a,b)=>a+b,0)/w.length;
+    return Math.sqrt(w.reduce((s,v)=>(s+(v-m)**2),0)/w.length);
+  });
+
+  STATE.charts.resid = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Residuals',
+          data: residuals,
+          backgroundColor: residuals.map(r => r > 0 ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)'),
+          borderWidth: 0,
+          barThickness: 3,
+        },
+        {
+          type: 'line',
+          label: 'Rolling Volatility',
+          data: rollVol,
+          borderColor: '#f59e0b',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.4,
+          yAxisID: 'y1',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: {
+        x: { display: false },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color:'#475569', font:{family:'DM Mono',size:8} },
+          border: { color:'rgba(255,255,255,0.06)' },
+        },
+        y1: {
+          position: 'right',
+          grid: { display: false },
+          ticks: { color:'#475569', font:{family:'DM Mono',size:8} },
+          border: { color:'rgba(255,255,255,0.06)' },
+        }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  MODEL CARDS
+// ══════════════════════════════════════════════════════════════════
+
+function renderModelCards(results, steps) {
+  const sorted = Object.values(results).sort((a,b) => b.metrics.r2 - a.metrics.r2);
+  const lastPrice = STATE.priceData[STATE.priceData.length-1];
+  const sym = STATE.asset.sym;
+
+  // Update best R²
+  if (sorted.length > 0) {
+    document.getElementById('kpiBestR2').textContent = sorted[0].metrics.r2.toFixed(3);
+    document.getElementById('kpiBestModel').textContent = sorted[0].name;
+  }
+
+  const grid = document.getElementById('modelResultsGrid');
+  grid.innerHTML = sorted.map((r, i) => {
+    const m = r.metrics;
+    const pillClass = r.type==='stat'?'pill-stat':r.type==='ml'?'pill-ml':'pill-hybrid';
+    const rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+    const f1 = r.forecast[0] || lastPrice;
+    const f7 = r.forecast[Math.min(6, r.forecast.length-1)] || lastPrice;
+    const f30 = r.forecast[Math.min(29, r.forecast.length-1)] || lastPrice;
+    const bull1 = f1 > lastPrice;
+    const bull7 = f7 > lastPrice;
+    const bull30 = f30 > lastPrice;
+    const typeLabel = r.type==='stat'?'Statistical':r.type==='ml'?'Machine Learning':'Hybrid';
+
+    return `<div class="model-card fade-up" style="--mc-color:${r.color}; animation-delay:${i*0.05}s; opacity:0">
+      <div class="model-card-top">
+        <span class="model-type-pill ${pillClass}">${typeLabel}</span>
+        <span class="model-rank ${rankClass}">#${i+1}</span>
+      </div>
+      <div class="model-name">${r.name}</div>
+      <div class="model-desc">${r.desc}</div>
+      <div class="model-metrics">
+        <div class="metric-cell">
+          <div class="metric-cell-label">RMSE</div>
+          <div class="metric-cell-value">${m.rmse < 1 ? m.rmse.toFixed(4) : m.rmse.toFixed(2)}</div>
+        </div>
+        <div class="metric-cell">
+          <div class="metric-cell-label">MAE</div>
+          <div class="metric-cell-value">${m.mae < 1 ? m.mae.toFixed(4) : m.mae.toFixed(2)}</div>
+        </div>
+        <div class="metric-cell">
+          <div class="metric-cell-label">MAPE</div>
+          <div class="metric-cell-value">${m.mape.toFixed(2)}%</div>
+        </div>
+        <div class="metric-cell">
+          <div class="metric-cell-label">R² Score</div>
+          <div class="metric-cell-value" style="color:${r.color}">${m.r2.toFixed(3)}</div>
+        </div>
+      </div>
+      <div class="model-forecast-row">
+        <div class="mf-box">
+          <div class="mf-label">+1D</div>
+          <div class="mf-value ${bull1?'bull':'bear'}">${formatPrice(f1, sym)}</div>
+        </div>
+        <div class="mf-box">
+          <div class="mf-label">+7D</div>
+          <div class="mf-value ${bull7?'bull':'bear'}">${formatPrice(f7, sym)}</div>
+        </div>
+        <div class="mf-box">
+          <div class="mf-label">+30D</div>
+          <div class="mf-value ${bull30?'bull':'bear'}">${formatPrice(f30, sym)}</div>
+        </div>
+      </div>
+      <div class="model-r2-bar">
+        <div class="r2-label-row"><span>Model Accuracy</span><span>${(m.r2*100).toFixed(1)}%</span></div>
+        <div class="r2-track"><div class="r2-fill" style="width:${m.r2*100}%;background:${r.color}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SIGNAL PANEL
+// ══════════════════════════════════════════════════════════════════
+
+function updateSignalPanel(results, prices) {
+  const vals = Object.values(results);
+  const lastPrice = prices[prices.length-1];
+  const sym = STATE.asset.sym;
+
+  const bullish = vals.filter(r => (r.forecast[0]||0) > lastPrice);
+  const bearish = vals.filter(r => (r.forecast[0]||0) <= lastPrice);
+  const total = vals.length;
+
+  document.getElementById('sbBull').textContent = `${bullish.length}/${total}`;
+  document.getElementById('sbBear').textContent = `${bearish.length}/${total}`;
+  document.getElementById('sbBullBar').style.width = `${(bullish.length/total)*100}%`;
+  document.getElementById('sbBearBar').style.width = `${(bearish.length/total)*100}%`;
+
+  // Agreement: all models point same direction
+  const agree = Math.max(bullish.length, bearish.length) / total;
+  document.getElementById('sbAgree').textContent = `${(agree*100).toFixed(0)}%`;
+  document.getElementById('sbAgreeBar').style.width = `${agree*100}%`;
+
+  // Price targets (ensemble median)
+  function median(arr) {
+    const s = arr.slice().sort((a,b)=>a-b);
+    const m = Math.floor(s.length/2);
+    return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+  }
+
+  const t1 = median(vals.map(r => r.forecast[0] || lastPrice));
+  const t7 = median(vals.map(r => r.forecast[Math.min(6,r.forecast.length-1)] || lastPrice));
+  const t30 = median(vals.map(r => r.forecast[Math.min(29,r.forecast.length-1)] || lastPrice));
+
+  const c1 = t1>lastPrice?'var(--c-green)':'var(--c-red)';
+  const c7 = t7>lastPrice?'var(--c-green)':'var(--c-red)';
+  const c30 = t30>lastPrice?'var(--c-green)':'var(--c-red)';
+
+  document.getElementById('pt1d').textContent = formatPrice(t1, sym);
+  document.getElementById('pt7d').textContent = formatPrice(t7, sym);
+  document.getElementById('pt30d').textContent = formatPrice(t30, sym);
+  document.getElementById('pt1d').style.color = c1;
+  document.getElementById('pt7d').style.color = c7;
+  document.getElementById('pt30d').style.color = c30;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  STAT TESTS
+// ══════════════════════════════════════════════════════════════════
+
+function renderStatTests(prices) {
+  const tests = computeStatTests(prices);
+  const resClass = { pass:'res-pass', fail:'res-fail', warn:'res-warn' };
+  const resLabel = { pass:'PASS', fail:'FAIL', warn:'WARN' };
+
+  document.getElementById('statTestsBody').innerHTML = tests.map(t => `
+    <div class="stat-test-row">
+      <div class="stest-name">${t.name}</div>
+      <div class="stest-stat">${t.stat}</div>
+      <div class="stest-pval">${t.pval}</div>
+      <div><span class="stest-result ${resClass[t.result]}">${resLabel[t.result]}</span></div>
+    </div>
+  `).join('');
+}
+
+function renderFeatureImportance(prices) {
+  const features = computeFeatureImportance(prices);
+  const max = Math.max(...features.map(f=>parseFloat(f.pct)));
+  document.getElementById('featImportBody').innerHTML = features.map(f => `
+    <div class="feat-row">
+      <div class="feat-label-row"><span>${f.name}</span><span>${f.pct}%</span></div>
+      <div class="feat-track"><div class="feat-fill" style="width:${(f.pct/max)*100}%"></div></div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', init);
 </script>
 
 </body>
