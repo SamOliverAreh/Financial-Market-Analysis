@@ -4,6 +4,7 @@ Daily training script for NEXUS.
 Fetches live data from Yahoo Finance, trains all models,
 computes consensus signals, and saves forecast_data.json.
 All numbers are converted to native Python floats for JSON safety.
+Clean display symbols are provided.
 """
 import json, datetime, math, sys, warnings
 import pandas as pd
@@ -31,6 +32,8 @@ MARKET_ASSETS = {
     "stocks":      ["AAPL", "MSFT", "NVDA", "AMZN", "TSLA", "GOOGL", "META", "JPM"],
     "index":       ["^GSPC", "^IXIC", "^DJI", "^FTSE", "^N225", "^GDAXI", "^FCHI", "^AXJO"]
 }
+
+# Full names (already descriptive)
 NAMES = {
     "EURUSD=X":"Euro / US Dollar", "GBPUSD=X":"Pound / US Dollar", "JPY=X":"US Dollar / Yen",
     "AUDUSD=X":"Aussie / US Dollar", "CAD=X":"US Dollar / CAD", "EURGBP=X":"Euro / Pound",
@@ -44,7 +47,22 @@ NAMES = {
     "^GSPC":"S&P 500", "^IXIC":"NASDAQ", "^DJI":"Dow Jones Industrial",
     "^FTSE":"FTSE 100", "^N225":"Nikkei 225", "^GDAXI":"DAX", "^FCHI":"CAC 40", "^AXJO":"ASX 200"
 }
-FORECAST_HORIZON = 30  # days
+
+# Clean short display symbols (no '=X' etc.)
+DISPLAY_SYM = {
+    "EURUSD=X":"EUR/USD", "GBPUSD=X":"GBP/USD", "JPY=X":"USD/JPY",
+    "AUDUSD=X":"AUD/USD", "CAD=X":"USD/CAD", "EURGBP=X":"EUR/GBP",
+    "CHF=X":"USD/CHF", "NZDUSD=X":"NZD/USD",
+    "GC=F":"GOLD", "SI=F":"SILVER", "CL=F":"OIL", "NG=F":"NAT GAS",
+    "HG=F":"COPPER", "ZW=F":"WHEAT", "ZC=F":"CORN", "PL=F":"PLATINUM",
+    "^GSPC":"S&P 500", "^IXIC":"NASDAQ", "^DJI":"DOW JONES",
+    "^FTSE":"FTSE 100", "^N225":"NIKKEI 225", "^GDAXI":"DAX", "^FCHI":"CAC 40", "^AXJO":"ASX 200"
+}
+# Stocks keep their ticker
+for sym in ["AAPL","MSFT","NVDA","AMZN","TSLA","GOOGL","META","JPM"]:
+    DISPLAY_SYM[sym] = sym
+
+FORECAST_HORIZON = 30
 
 # ---------- Data helpers ----------
 def fetch_data(symbol):
@@ -57,21 +75,12 @@ def fetch_data(symbol):
 def compute_returns(prices):
     return np.diff(prices) / prices[:-1]
 
-def safe_float(x):
-    """Convert a numpy scalar to a native Python float."""
-    if isinstance(x, (np.floating, np.integer)):
-        return float(x)
-    if isinstance(x, np.ndarray):
-        return x.tolist()
-    return x
-
 def safe_list(arr):
-    """Ensure a list of native Python floats."""
     return [float(v) for v in arr]
 
 def metrics(actual, pred):
     actual = np.array(actual)
-    pred = np.array(pred)
+    pred   = np.array(pred)
     rmse = float(np.sqrt(mean_squared_error(actual, pred)))
     mae  = float(mean_absolute_error(actual, pred))
     mape = float(np.mean(np.abs((actual - pred) / actual)) * 100)
@@ -198,7 +207,6 @@ def train_models(prices):
         model.compile(optimizer='adam', loss='mse')
         es = EarlyStopping(monitor='loss', patience=5, restore_best_weights=True)
         model.fit(X, y, epochs=50, batch_size=16, verbose=0, callbacks=[es])
-        # Validation forecast
         last_rets = rets[-seq_len:].flatten()
         pred_rets = []
         for _ in range(30):
@@ -208,7 +216,6 @@ def train_models(prices):
             last_rets = np.append(last_rets, next_ret)
         pred_val = train[-1] * np.cumprod(1 + np.array(pred_rets))
         met = metrics(valid, pred_val)
-        # Full forecast
         forecast_rets = []
         last_rets = rets[-seq_len:].flatten()
         for _ in range(FORECAST_HORIZON):
@@ -280,6 +287,7 @@ def main():
             technicals = compute_technicals(prices)
             asset_entry = {
                 "sym": sym,
+                "display_sym": DISPLAY_SYM.get(sym, sym),
                 "name": NAMES.get(sym, sym),
                 "prices": [float(x) for x in prices[-90:].tolist()],
                 "forecast": [safe_list(m['forecast']) for m in valid_models],
@@ -303,7 +311,6 @@ def main():
             }
             assets.append(asset_entry)
         all_data["markets"][market] = assets
-    # Write JSON with native types
     with open("forecast_data.json", "w") as f:
         json.dump(all_data, f, indent=2)
     print("Successfully wrote forecast_data.json")
