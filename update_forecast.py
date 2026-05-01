@@ -33,7 +33,7 @@ MARKET_ASSETS = {
     "index":       ["^GSPC", "^IXIC", "^DJI", "^FTSE", "^N225", "^GDAXI", "^FCHI", "^AXJO"]
 }
 
-# Full names (already descriptive)
+# Full names
 NAMES = {
     "EURUSD=X":"Euro / US Dollar", "GBPUSD=X":"Pound / US Dollar", "JPY=X":"US Dollar / Yen",
     "AUDUSD=X":"Aussie / US Dollar", "CAD=X":"US Dollar / CAD", "EURGBP=X":"Euro / Pound",
@@ -58,7 +58,6 @@ DISPLAY_SYM = {
     "^GSPC":"S&P 500", "^IXIC":"NASDAQ", "^DJI":"DOW JONES",
     "^FTSE":"FTSE 100", "^N225":"NIKKEI 225", "^GDAXI":"DAX", "^FCHI":"CAC 40", "^AXJO":"ASX 200"
 }
-# Stocks keep their ticker
 for sym in ["AAPL","MSFT","NVDA","AMZN","TSLA","GOOGL","META","JPM"]:
     DISPLAY_SYM[sym] = sym
 
