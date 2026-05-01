@@ -1115,7 +1115,7 @@ grid-template-columns: 1fr;
           <div class="asset-list" id="assetList"></div>
         </div>
 
-        <!-- Horizon (still present but non‑functional, can be hidden) -->
+        <!-- Horizon (non‑functional) -->
         <div class="s-section">
           <div class="s-label">Forecast Horizon</div>
           <div class="horizon-grid">
@@ -1127,7 +1127,7 @@ grid-template-columns: 1fr;
           </div>
         </div>
 
-        <!-- Models toggles (non‑functional, retain as UI) -->
+        <!-- Models toggles (non‑functional) -->
         <div class="s-section">
           <div class="s-label">Models</div>
           <div id="modelToggles"></div>
@@ -1135,9 +1135,8 @@ grid-template-columns: 1fr;
 
       </div><!-- /sidebar-scroll -->
 
-      <!-- Run button now shows last update info -->
       <button id="runBtn" disabled>
-        <span class="run-label" id="runLabel">Data loaded from API</span>
+        <span class="run-label" id="runLabel">📡 Live data daily</span>
       </button>
     </aside>
 
@@ -1278,13 +1277,16 @@ grid-template-columns: 1fr;
 
 <script>
 /* ══════════════════════════════════════════════════
-   LIVE DASHBOARD — loads pre‑computed forecast_data.json
+   LIVE DASHBOARD — loads forecast_data.json + Finnhub live prices
 ══════════════════════════════════════════════════ */
+const FINNHUB_KEY = 'd7q318hr01qosaaqf2p0d7q318hr01qosaaqf2pg';  // Your free key
+
 const S = {
   market: 'forex',
   allData: null,
   charts: {},
-  currentAsset: null
+  currentAsset: null,
+  liveInterval: null
 };
 
 // ── Utility ────────────────────────────
@@ -1295,6 +1297,65 @@ function fmtP(v, sym) {
   if (v > 100) return v.toFixed(2);
   if (v > 10) return v.toFixed(3);
   return v.toFixed(4);
+}
+
+// ── Finnhub symbol mapping (Yahoo ticker → Finnhub) ──
+function toFinnhubSymbol(yahooSymbol) {
+  const map = {
+    'EURUSD=X': 'OANDA:EUR_USD',
+    'GBPUSD=X': 'OANDA:GBP_USD',
+    'JPY=X':    'OANDA:USD_JPY',
+    'AUDUSD=X': 'OANDA:AUD_USD',
+    'CAD=X':    'OANDA:USD_CAD',
+    'EURGBP=X': 'OANDA:EUR_GBP',
+    'CHF=X':    'OANDA:USD_CHF',
+    'NZDUSD=X': 'OANDA:NZD_USD',
+    'GC=F':     'OANDA:XAU_USD',
+    'SI=F':     'OANDA:XAG_USD',
+    'CL=F':     'OANDA:WTI_USD',
+    'NG=F':     'OANDA:NATGAS_USD',
+    'HG=F':     'OANDA:XCU_USD',
+    'ZW=F':     'OANDA:WHEAT_USD',
+    'ZC=F':     'OANDA:CORN_USD',
+    'PL=F':     'OANDA:XPT_USD',
+    '^GSPC':    'SPY',        // S&P 500 ETF as proxy
+    '^IXIC':    'QQQ',        // NASDAQ proxy
+    '^DJI':     'DIA',        // Dow proxy
+    '^FTSE':    'EWU',        // FTSE proxy
+    '^N225':    'EWJ',        // Nikkei proxy
+    '^GDAXI':   'EWG',        // DAX proxy
+    '^FCHI':    'EWQ',        // CAC proxy
+    '^AXJO':    'EWA',        // ASX proxy
+  };
+  // Stocks usually just upper case, pass through
+  if (map[yahooSymbol]) return map[yahooSymbol];
+  return yahooSymbol.replace(/[=^]/g, '').toUpperCase();
+}
+
+// ── Fetch live price from Finnhub ─────
+async function fetchLivePrice() {
+  if (!S.currentAsset) return;
+  const sym = toFinnhubSymbol(S.currentAsset.sym);
+  const url = `https://finnhub.io/api/v1/quote?symbol=${sym}&token=${FINNHUB_KEY}`;
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (data.c && data.c > 0) {  // c = current price, pc = previous close
+      const price = data.c;
+      const prevClose = data.pc || S.currentAsset.ohlc.open; // fallback
+      const change = ((price - prevClose) / prevClose * 100).toFixed(2);
+      document.getElementById('hPrice').textContent = fmtP(price, S.currentAsset.sym);
+      document.getElementById('hPrice').style.color = change >= 0 ? 'var(--green)' : 'var(--red)';
+      const badge = document.getElementById('hBadge');
+      badge.textContent = `${change >= 0 ? '▲' : '▼'} ${Math.abs(change)}%`;
+      badge.className = 'h-badge ' + (change >= 0 ? 'up' : 'down');
+      // Also update KPI price card
+      document.getElementById('kPrice').textContent = fmtP(price, S.currentAsset.sym);
+      document.getElementById('kPrice').style.color = change >= 0 ? 'var(--green)' : 'var(--red)';
+    }
+  } catch (e) {
+    console.warn('Live price fetch failed', e);
+  }
 }
 
 // ── Fetch JSON ─────────────────────────
@@ -1312,7 +1373,7 @@ async function loadData() {
 
 // ── Initialize ────────────────────────
 function initUI() {
-  document.getElementById('runLabel').textContent = `Updated: ${new Date(S.allData.generated_at).toLocaleString()}`;
+  document.getElementById('runLabel').textContent = `📡 Updated: ${new Date(S.allData.generated_at).toLocaleString()}`;
   // Bind market tabs
   document.querySelectorAll('.mktab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -1322,9 +1383,12 @@ function initUI() {
   });
   // Default market
   selectMarket('forex');
-  // Set up live clock
+  // Start live clock
   startLiveClock();
   setInterval(startLiveClock, 30000);
+  // Start live price polling
+  if (S.liveInterval) clearInterval(S.liveInterval);
+  S.liveInterval = setInterval(fetchLivePrice, 60000); // every 60 sec
 }
 
 function startLiveClock() {
@@ -1445,6 +1509,9 @@ function updateDashboard(asset) {
   // Bottom panels (placeholder)
   document.getElementById('statTestsBody').innerHTML = '<div class="stest-row"><span class="stest-name">Statistical tests not included – extend Python script</span></div>';
   document.getElementById('featBody').innerHTML = '<div class="feat-row"><span class="feat-labels">Feature importance not computed</span></div>';
+
+  // Fetch live price immediately after switching
+  fetchLivePrice();
 }
 
 // ── Charts ─────────────────────────────
@@ -1661,7 +1728,6 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
 });
 
-// Prevent sidebar close on desktop resize
 window.addEventListener('resize', () => {
   if (window.innerWidth > 768) closeSidebar();
 });
