@@ -7,3 +7,4 @@ prophet
 xgboost
 scikit-learn
 tensorflow
+plotly
